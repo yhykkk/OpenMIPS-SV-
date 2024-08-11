@@ -1,0 +1,4 @@
+sim/*/work
+sim/*/*.cr.mti
+sim/*/*.mpf
+sim/*/*.wlf
