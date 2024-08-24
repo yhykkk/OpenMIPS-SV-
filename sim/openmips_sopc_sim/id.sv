@@ -84,8 +84,8 @@ always_comb begin
 
         case( op0 )
         `EXE_SPECIAL : begin
-            if( op2 == 'b0 ) begin
-                case ( op3 ) 
+            if( op1 == 'b0 ) begin
+                case ( op2 ) 
                 `EXE_OR: begin
                     o_reg_wen   = `WRITE_ENABLE;
                     o_alu_op    = `EXE_OR_OP;
@@ -215,7 +215,7 @@ always_comb begin
         endcase
 
         if( i_inst[31:21] == 'b0) begin
-            case( op3 )
+            case( op2 )
             `EXE_SLL: begin
                 o_reg_wen   = `WRITE_ENABLE ;
                 o_reg_waddr = i_inst[15:11];
