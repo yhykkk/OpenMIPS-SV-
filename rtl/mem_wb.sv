@@ -15,7 +15,15 @@ module mem_wb (
 
     output logic [`N_REG_ADDR-1:0]  o_wb_waddr    ,
     output logic [`N_REG-1:0]       o_wb_wdata    ,
-    output logic                    o_wb_wen      
+    output logic                    o_wb_wen      ,
+
+    input  logic                    i_mem_hilo_wen,
+    input  logic [`N_REG-1:0]       i_mem_hi      ,
+    input  logic [`N_REG-1:0]       i_mem_lo      ,
+    
+    output logic                    o_wb_hilo_wen ,
+    output logic [`N_REG-1:0]       o_wb_hi       ,
+    output logic [`N_REG-1:0]       o_wb_lo       
 );
 
 always_ff @( posedge i_clk or negedge i_rst_n) begin
@@ -23,10 +31,16 @@ always_ff @( posedge i_clk or negedge i_rst_n) begin
         o_wb_waddr <= `NOP_REG_ADDR;
         o_wb_wdata <= 'b0;
         o_wb_wen   <= `WRITE_DISABLE;
+        o_wb_hilo_wen <= `WRITE_DISABLE;
+        o_wb_hi       <= 'b0;
+        o_wb_lo       <= 'b0;
     end else begin
         o_wb_waddr <= i_mem_waddr;
         o_wb_wdata <= i_mem_wdata;
         o_wb_wen   <= i_mem_wen  ;
+        o_wb_hilo_wen <= i_mem_hilo_wen;
+        o_wb_hi       <= i_mem_hi      ;
+        o_wb_lo       <= i_mem_lo      ;
     end
 end
 

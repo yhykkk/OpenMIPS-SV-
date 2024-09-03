@@ -52,7 +52,33 @@
 
 `define EXE_SYNC        6'b001111             // instruct sync opcode
 `define EXE_PREF        6'b110011             // instruct pref opcode
-`define EXE_SPECIAL     6'b000000             // instruct special opcode
+`define EXE_SPECIAL     6'b000000             // instruct special  opcode
+`define EXE_SPECIAL2    6'b011100             // instruct special2 opcode
+`define EXE_REGIMM      6'b000001             // instruct regimm   opcode
+
+`define EXE_MOVZ        6'b001010             // instruct movz opcode
+`define EXE_MOVN        6'b001011             // instruct movn opcode
+`define EXE_MFHI        6'b010000             // instruct mfhi opcode
+`define EXE_MTHI        6'b010001             // instruct mthi opcode
+`define EXE_MFLO        6'b010010             // instruct mflo opcode
+`define EXE_MTLO        6'b010011             // instruct mtlo opcode
+
+`define EXE_SLT         6'b100110             // instruct slt   opcode           
+`define EXE_SLTU        6'b101011             // instruct sltu  opcode 
+`define EXE_SLTI        6'b001010             // instruct slti  opcode 
+`define EXE_SLTIU       6'b001011             // instruct sltiu opcode
+`define EXE_ADD         6'b100000             // instruct add   opcode 
+`define EXE_ADDU        6'b100001             // instruct addu  opcode 
+`define EXE_SUB         6'b100010             // instruct sub   opcode
+`define EXE_SUBU        6'b100011             // instruct subu  opcode  
+`define EXE_ADDI        6'b001000             // instruct addi  opcode   
+`define EXE_ADDIU       6'b001001             // instruct addiu opcode 
+`define EXE_CLZ         6'b100000             // instruct clz   opcode  
+`define EXE_CLO         6'b100001             // instruct clo   opcode
+`define EXE_MULT        6'b011000             // instruct mult  opcode
+`define EXE_MULTU       6'b011001             // instruct multu opcode
+`define EXE_MUL         6'b000010             // instruct mul   opcode
+
 
 `define EXE_AND_OP      8'b00100100           // alu 's 8 bit nop  opcode
 `define EXE_OR_OP       8'b00100101           // alu 's 8 bit or   opcode
@@ -64,19 +90,46 @@
 `define EXE_LUI_OP      8'b00001111           // alu 's 8 bit lui  opcode
 `define EXE_NOP_OP      8'b00000000           // alu 's 8 bit nop  opcode
 
-`define EXE_SLL_OP      8'b00000000           // alu 's 8 bit sll  opcode
+`define EXE_SLL_OP      8'b01000000           // alu 's 8 bit sll  opcode
 `define EXE_SLLV_OP     8'b00000100           // alu 's 8 bit sllv opcode
-`define EXE_SRL_OP      8'b00000010           // alu 's 8 bit sra  opcode
+`define EXE_SRL_OP      8'b01000010           // alu 's 8 bit sra  opcode
 `define EXE_SRLV_OP     8'b00000110           // alu 's 8 bit srlv opcode
 `define EXE_SRA_OP      8'b00000011           // alu 's 8 bit sra  opcode
 `define EXE_SRAV_OP     8'b00000111           // alu 's 8 bit srav opcode
 
-`define EXE_SYNC_OP     8'b00001111           // alu 's 8 bit sync opcode
+`define EXE_SYNC_OP     8'b01001111           // alu 's 8 bit sync opcode
 `define EXE_PREF_OP     8'b00110011           // alu 's 8 bit pref opcode
 
- `define EXE_RES_NOP    3'b000  
-`define EXE_RES_LOGIC   3'b001 
-`define EXE_RES_SHIFT   3'b010
+`define EXE_MOVZ_OP     8'b01001010           // alu 's 8 bit movz opcode
+`define EXE_MOVN_OP     8'b01001011           // alu 's 8 bit movn opcode
+`define EXE_MFHI_OP     8'b00010000           // alu 's 8 bit mfhi opcode
+`define EXE_MTHI_OP     8'b00010001           // alu 's 8 bit mthi opcode
+`define EXE_MFLO_OP     8'b00010010           // alu 's 8 bit mflo opcode
+`define EXE_MTLO_OP     8'b00010011           // alu 's 8 bit mtlo opcode
+
+`define EXE_SLT_OP      8'b01100110           // alu 's 8 bit slt   opcode           
+`define EXE_SLTU_OP     8'b00101011           // alu 's 8 bit sltu  opcode 
+`define EXE_SLTI_OP     8'b00001010           // alu 's 8 bit slti  opcode 
+`define EXE_SLTIU_OP    8'b00001011           // alu 's 8 bit sltiu opcode
+`define EXE_ADD_OP      8'b01100000           // alu 's 8 bit add   opcode 
+`define EXE_ADDU_OP     8'b01100001           // alu 's 8 bit addu  opcode 
+`define EXE_SUB_OP      8'b00100010           // alu 's 8 bit sub   opcode
+`define EXE_SUBU_OP     8'b00100011           // alu 's 8 bit subu  opcode  
+`define EXE_ADDI_OP     8'b00001000           // alu 's 8 bit addi  opcode   
+`define EXE_ADDIU_OP    8'b00001001           // alu 's 8 bit addiu opcode 
+`define EXE_CLZ_OP      8'b00100000           // alu 's 8 bit clz   opcode  
+`define EXE_CLO_OP      8'b00100001           // alu 's 8 bit clo   opcode
+`define EXE_MULT_OP     8'b00011000           // alu 's 8 bit mult  opcode
+`define EXE_MULTU_OP    8'b00011001           // alu 's 8 bit multu opcode
+`define EXE_MUL_OP      8'b00000010           // alu 's 8 bit mul   opcode
+
+`define EXE_RES_NOP             3'b000  
+`define EXE_RES_LOGIC           3'b001 
+`define EXE_RES_SHIFT           3'b010
+`define EXE_RES_MOVE            3'b011
+`define EXE_RES_ARITHMETIC      3'b100
+`define EXE_RES_MUL             3'b101
+
 /***************** instruct relatived defination  end  ********************/
 
 /***************** instruct rom relatived defination begin ********************/

@@ -6,9 +6,11 @@ add wave -noupdate -expand -group regfile {/tb_openmips_sopc/openmips_sopc_inst/
 add wave -noupdate -expand -group regfile {/tb_openmips_sopc/openmips_sopc_inst/openmips_inst/regfile_inst/regs[2]}
 add wave -noupdate -expand -group regfile {/tb_openmips_sopc/openmips_sopc_inst/openmips_inst/regfile_inst/regs[3]}
 add wave -noupdate -expand -group regfile {/tb_openmips_sopc/openmips_sopc_inst/openmips_inst/regfile_inst/regs[4]}
+add wave -noupdate -expand -group hilo /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/hilo_reg_reg/o_hi
+add wave -noupdate -expand -group hilo /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/hilo_reg_reg/o_lo
 add wave -noupdate -expand -group id /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_rst_n
 add wave -noupdate -expand -group id /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_pc
-add wave -noupdate -expand -group id /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_inst
+add wave -noupdate -expand -group id -color Magenta -radix binary /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_inst
 add wave -noupdate -expand -group id /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_reg_0_data
 add wave -noupdate -expand -group id /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_reg_1_data
 add wave -noupdate -expand -group id -color Magenta /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/o_reg_0_ren
@@ -40,7 +42,7 @@ add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmi
 add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/ex_inst/o_alu_reg_wdata
 add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/ex_inst/o_alu_reg_wen
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {77 ns} 0}
+WaveRestoreCursors {{Cursor 1} {234 ns} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 100
@@ -56,4 +58,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {58 ns} {126 ns}
+WaveRestoreZoom {138 ns} {304 ns}

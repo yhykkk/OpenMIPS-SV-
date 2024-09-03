@@ -142,6 +142,56 @@ always_comb begin
                     o_reg_0_ren = `READ_DISABLE;
                     o_reg_1_ren = `READ_ENABLE;
                 end
+                `EXE_MFHI: begin
+                    o_reg_wen   = `WRITE_ENABLE;
+                    o_alu_op    = `EXE_MFHI_OP ;
+                    o_alu_sel   = `EXE_RES_MOVE;
+                    o_reg_0_ren = `WRITE_DISABLE;
+                    o_reg_1_ren = `WRITE_DISABLE;
+                end
+                `EXE_MFLO: begin
+                    o_reg_wen   = `WRITE_ENABLE;
+                    o_alu_op    = `EXE_MFLO_OP ;
+                    o_alu_sel   = `EXE_RES_MOVE;
+                    o_reg_0_ren = `WRITE_DISABLE;
+                    o_reg_1_ren = `WRITE_DISABLE;
+                end
+                `EXE_MTHI: begin
+                    o_reg_wen   = `WRITE_DISABLE;
+                    o_alu_op    = `EXE_MTHI_OP ;
+                    o_alu_sel   = `EXE_RES_MOVE;
+                    o_reg_0_ren = `READ_ENABLE;
+                    o_reg_1_ren = `WRITE_DISABLE;
+                end
+                `EXE_MTLO: begin
+                    o_reg_wen   = `WRITE_DISABLE;
+                    o_alu_op    = `EXE_MTLO_OP ;
+                    o_alu_sel   = `EXE_RES_MOVE;
+                    o_reg_0_ren = `READ_ENABLE;
+                    o_reg_1_ren = `WRITE_DISABLE;
+                end
+                `EXE_MOVN: begin
+                    o_alu_op    = `EXE_MOVN_OP;
+                    o_alu_sel   = `EXE_RES_MOVE;
+                    o_reg_0_ren = `READ_ENABLE ;
+                    o_reg_1_ren = `READ_ENABLE ;
+                    if( o_op_reg_1 != 'b0 ) begin
+                        o_reg_wen = `WRITE_ENABLE;
+                    end else begin
+                        o_reg_wen = `WRITE_DISABLE;
+                    end
+                end
+                `EXE_MOVZ: begin
+                    o_alu_op  =  `EXE_MOVZ_OP;
+                    o_alu_sel =  `EXE_RES_MOVE;
+                    o_reg_0_ren = `READ_ENABLE ;
+                    o_reg_1_ren = `READ_ENABLE ;
+                    if( o_op_reg_1 == 'b0 ) begin
+                        o_reg_wen = `WRITE_ENABLE;
+                    end else begin
+                        o_reg_wen = `WRITE_DISABLE;
+                    end
+                end
                 default: begin
 
                 end

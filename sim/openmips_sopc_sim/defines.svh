@@ -54,6 +54,13 @@
 `define EXE_PREF        6'b110011             // instruct pref opcode
 `define EXE_SPECIAL     6'b000000             // instruct special opcode
 
+`define EXE_MOVZ        6'b001010             // instruct movz opcode
+`define EXE_MOVN        6'b001011             // instruct movn opcode
+`define EXE_MFHI        6'b010000             // instruct mfhi opcode
+`define EXE_MTHI        6'b010001             // instruct mthi opcode
+`define EXE_MFLO        6'b010010             // instruct mflo opcode
+`define EXE_MTLO        6'b010011             // instruct mtlo opcode
+
 `define EXE_AND_OP      8'b00100100           // alu 's 8 bit nop  opcode
 `define EXE_OR_OP       8'b00100101           // alu 's 8 bit or   opcode
 `define EXE_XOR_OP      8'b00100110           // alu 's 8 bit xor  opcode
@@ -74,9 +81,17 @@
 `define EXE_SYNC_OP     8'b00001111           // alu 's 8 bit sync opcode
 `define EXE_PREF_OP     8'b00110011           // alu 's 8 bit pref opcode
 
- `define EXE_RES_NOP    3'b000  
+`define EXE_MOVZ_OP     8'b00001010           // alu 's 8 bit movz opcode
+`define EXE_MOVN_OP     8'b00001011           // alu 's 8 bit movn opcode
+`define EXE_MFHI_OP     8'b00010000           // alu 's 8 bit mfhi opcode
+`define EXE_MTHI_OP     8'b00010001           // alu 's 8 bit mthi opcode
+`define EXE_MFLO_OP     8'b00010010           // alu 's 8 bit mflo opcode
+`define EXE_MTLO_OP     8'b00010011           // alu 's 8 bit mtlo opcode
+
+`define EXE_RES_NOP     3'b000  
 `define EXE_RES_LOGIC   3'b001 
 `define EXE_RES_SHIFT   3'b010
+`define EXE_RES_MOVE    3'b011
 /***************** instruct relatived defination  end  ********************/
 
 /***************** instruct rom relatived defination begin ********************/
