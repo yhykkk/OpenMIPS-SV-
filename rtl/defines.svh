@@ -30,6 +30,9 @@
 `define CHIP_ENABLE    1'b1       // chip enable
 `define CHIP_DISABLE   1'b0       // chip disable
 
+`define STOP           1'b1       // pause pipeline
+`define NO_STOP        1'b0       // no pause pipeline
+
 /***************** global defination  end  ********************/
 
 /***************** instruct relatived defination begin ********************/

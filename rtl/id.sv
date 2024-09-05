@@ -38,7 +38,9 @@ module id (
     // input signal from mem stage
     input  logic                       i_mem_wen    ,
     input  logic [`N_REG_ADDR-1:0]     i_mem_waddr  ,
-    input  logic [`N_REG-1:0]          i_mem_wdata 
+    input  logic [`N_REG-1:0]          i_mem_wdata  ,
+    
+    output logic                       o_stall      
 );
 
 logic [`N_INST_OP-1:0]     op0;
@@ -440,5 +442,7 @@ always_comb begin
         end
     end
 end
+
+assign o_stall = `NO_STOP;
 
 endmodule
