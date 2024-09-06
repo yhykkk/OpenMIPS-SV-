@@ -31,7 +31,8 @@ module ex (
 
     output logic                    o_hilo_wen      ,
     output logic [`N_REG-1:0]       o_hi            ,
-    output logic [`N_REG-1:0]       o_lo             
+    output logic [`N_REG-1:0]       o_lo            ,
+    output logic                    o_streq         
 );
 
 logic [`N_REG-1:0]     logic_out ;  // save logic operator result
@@ -270,5 +271,7 @@ always_comb begin
         o_lo       = lo;
     end
 end
+
+assign o_streq = `NO_STOP;
 
 endmodule

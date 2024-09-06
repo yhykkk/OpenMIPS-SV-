@@ -13,6 +13,8 @@ module ex_mem (
     input  logic [`N_REG-1:0]       i_ex_wdata    ,
     input  logic [`N_REG_ADDR-1:0]  i_ex_waddr    ,
 
+    input  logic [5:0]              i_stall       ,
+
     output logic                    o_mem_wen     ,
     output logic [`N_REG-1:0]       o_mem_wdata   ,
     output logic [`N_REG_ADDR-1:0]  o_mem_waddr   ,
@@ -25,7 +27,9 @@ module ex_mem (
     output logic [`N_REG-1:0]       o_mem_hi      ,
     output logic [`N_REG-1:0]       o_mem_lo     
 );
-
+// 1. stall[3] == STOP, stall[4]==NO_STOP, ex->pause, mem->run, use nop instruction
+// 2. stall[3] == NO_STOP, ex->run, then come to mem
+// 3. others , keep mem_waddr, mem_wen ,mem_wdata,mem_hi,mem_lo,mem_hilo_wen
 always_ff @( posedge i_clk or negedge i_rst_n ) begin
     if( i_rst_n == `RST_ENABLE ) begin
         o_mem_wen  <= `WRITE_DISABLE; 
@@ -34,13 +38,27 @@ always_ff @( posedge i_clk or negedge i_rst_n ) begin
         o_mem_hilo_wen <= `WRITE_DISABLE;
         o_mem_hi       <= 'b0;
         o_mem_lo       <= 'b0;
-    end else begin
-        o_mem_wen  <= i_ex_wen;
-        o_mem_wdata<= i_ex_wdata;
-        o_mem_waddr<= i_ex_waddr;
+    end else if( (i_stall[3] == `STOP) && (i_stall[4] == `NO_STOP) ) begin
+        o_mem_waddr <= `NOP_REG_ADDR;
+        o_mem_wen   <= `WRITE_DISABLE;
+        o_mem_wdata <= 'b0;
+        o_mem_hilo_wen <= `WRITE_DISABLE;
+        o_mem_lo       <= 'b0;
+        o_mem_hi       <= 'b0;
+    end else if( i_stall[3] == `NO_STOP) begin
+        o_mem_wen      <= i_ex_wen;
+        o_mem_wdata    <= i_ex_wdata;
+        o_mem_waddr    <= i_ex_waddr;
         o_mem_hilo_wen <= i_ex_hilo_wen;
         o_mem_hi       <= i_ex_hi;
         o_mem_lo       <= i_ex_lo;
+    end else begin
+        o_mem_wen      <= o_mem_wen     ;
+        o_mem_wdata    <= o_mem_wdata   ;
+        o_mem_waddr    <= o_mem_waddr   ;
+        o_mem_hilo_wen <= o_mem_hilo_wen;
+        o_mem_hi       <= o_mem_hi      ;
+        o_mem_lo       <= o_mem_lo      ;
     end
 end
 endmodule

@@ -40,7 +40,7 @@ module id (
     input  logic [`N_REG_ADDR-1:0]     i_mem_waddr  ,
     input  logic [`N_REG-1:0]          i_mem_wdata  ,
     
-    output logic                       o_stall      
+    output logic                       o_streq     
 );
 
 logic [`N_INST_OP-1:0]     op0;
@@ -443,6 +443,6 @@ always_comb begin
     end
 end
 
-assign o_stall = `NO_STOP;
+assign o_streq = `NO_STOP;
 
 endmodule

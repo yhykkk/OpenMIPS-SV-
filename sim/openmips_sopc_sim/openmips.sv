@@ -94,21 +94,34 @@ logic [`N_REG-1:0]          hilo2ex_hi              ;
 logic [`N_REG-1:0]          hilo2ex_lo              ;
 /********************** define hilo2ex  end  ***********************/
 
+/********************** define pctrl2others begin ******************/
+logic [5:0]                 pctrl2others_stall      ;
+/********************** define pctrl2others  end  ******************/
+
+/********************** define id2pctrl begin **********************/
+logic                       id2pctrl_streq          ;
+/********************** define id2pctrl  end  **********************/
+
+/********************** define ex2pctrl begin **********************/
+logic                       ex2pctrl_streq          ;
+/********************** define ex2pctrl  end  **********************/
 
 pc_reg pc_reg_inst (
-    .i_clk   (i_clk      ),
-    .i_rst_n (i_rst_n    ),
-    .o_pc    (o_inst_addr),
-    .o_ce    (o_inst_ren ) 
+    .i_clk   (i_clk             ),
+    .i_rst_n (i_rst_n           ),
+    .i_stall (pctrl2others_stall),
+    .o_pc    (o_inst_addr       ),
+    .o_ce    (o_inst_ren        ) 
 );
 
-if_id if_id_inst (
-    .i_clk     (i_clk        ),
-    .i_rst_n   (i_rst_n      ),
-    .i_if_pc   (o_inst_addr  ),
-    .i_if_inst (i_inst_data  ),
-    .o_id_pc   (if_id2id_pc  ),
-    .o_id_inst (if_id2id_inst) 
+if_id if_id_inst ( 
+    .i_clk     (i_clk             ),
+    .i_rst_n   (i_rst_n           ),
+    .i_if_pc   (o_inst_addr       ),
+    .i_if_inst (i_inst_data       ),
+    .i_stall   (pctrl2others_stall),
+    .o_id_pc   (if_id2id_pc       ),
+    .o_id_inst (if_id2id_inst     ) 
 );
 
 id id_inst (
@@ -142,7 +155,9 @@ id id_inst (
     // input signal from mem stage
     .i_mem_wen    (mem2mem_wb_wen         ),
     .i_mem_waddr  (mem2mem_wb_waddr       ),
-    .i_mem_wdata  (mem2mem_wb_wdata       )
+    .i_mem_wdata  (mem2mem_wb_wdata       ),
+
+    .o_streq      (id2pctrl_streq         )
 );
 
 regfile regfile_inst (
@@ -169,7 +184,8 @@ id_ex id_ex_inst (
     .i_id_reg_0    (id2ex_op_reg_0       ),
     .i_id_reg_1    (id2ex_op_reg_1       ),
     .i_id_reg_wen  (id2ex_reg_wen        ),
-    .i_id_reg_waddr(id2ex_reg_waddr      ),   
+    .i_id_reg_waddr(id2ex_reg_waddr      ),  
+    .i_stall       (pctrl2others_stall   ), 
 
     .o_ex_alu_op   (id_ex2ex_ex_alu_op   ),
     .o_ex_alu_sel  (id_ex2ex_ex_alu_sel  ),
@@ -206,7 +222,9 @@ ex ex_inst (
 
     .o_hilo_wen      (ex2ex_mem_hilo_wen     ),
     .o_hi            (ex2ex_mem_hi           ),
-    .o_lo            (ex2ex_mem_lo           ) 
+    .o_lo            (ex2ex_mem_lo           ),
+    
+    .o_streq         (ex2pctrl_streq         )
 );
 
 ex_mem ex_mem_inst (
@@ -216,6 +234,7 @@ ex_mem ex_mem_inst (
     .i_ex_wen      (ex2ex_mem_alu_reg_wen  ),
     .i_ex_wdata    (ex2ex_mem_alu_reg_wdata),
     .i_ex_waddr    (ex2ex_mem_alu_reg_waddr),
+    .i_stall       (pctrl2others_stall     ),
 
     .o_mem_wen     (ex_mem2mem_wen         ),
     .o_mem_wdata   (ex_mem2mem_wdata       ),
@@ -254,6 +273,7 @@ mem_wb mem_wb_inst (
     .i_mem_waddr   (mem2mem_wb_waddr    ),
     .i_mem_wdata   (mem2mem_wb_wdata    ),
     .i_mem_wen     (mem2mem_wb_wen      ),
+    .i_stall       (pctrl2others_stall  ),
 
     .o_wb_waddr    (mem_wb2regfile_waddr),
     .o_wb_wdata    (mem_wb2regfile_wdata),
@@ -275,6 +295,12 @@ hilo_reg hilo_reg_reg (
     .i_lo     (mem_wb2hilo_lo ),
     .o_hi     (hilo2ex_hi     ),
     .o_lo     (hilo2ex_lo     )   
+);
+
+pause_ctrl pause_ctrl_inst(
+    .i_id_stallreq   (id2pctrl_streq    ),
+    .i_ex_stallreq   (ex2pctrl_streq    ),
+    .o_stall         (pctrl2others_stall) 
 );
 
 endmodule
