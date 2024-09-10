@@ -32,27 +32,101 @@ module ex (
     output logic                    o_hilo_wen      ,
     output logic [`N_REG-1:0]       o_hi            ,
     output logic [`N_REG-1:0]       o_lo            ,
-    output logic                    o_streq         
+    output logic                    o_streq         ,
+
+    input  logic [`N_REG*2-1:0]     i_hilo_temp     ,
+    input  logic [1:0]              i_cnt           ,
+
+    output logic [`N_REG*2-1:0]     o_hilo_temp     ,
+    output logic [1:0]              o_cnt           ,
+
+    output logic                    o_divsigned     ,
+    output logic [`N_REG-1:0]       o_dividend      ,
+    output logic [`N_REG-1:0]       o_divisor       ,
+    output logic                    o_divstart      ,
+
+    input  logic [`N_REG-1:0]       i_quotient      ,
+    input  logic [`N_REG-1:0]       i_remainder     ,
+    input  logic                    i_div_done      ,
+    input  logic                    i_div_ready         
 );
 
-logic [`N_REG-1:0]     logic_out ;  // save logic operator result
-logic [`N_REG-1:0]     shift_out ;  // save shift operator result
-logic [`N_REG-1:0]     move_out  ;  // save move  operator result
-logic [`N_REG-1:0]     arith_out ;  // save arith operator result
-    
-logic [`N_REG-1:0]     hi        ;  // the lastest value of hi
-logic [`N_REG-1:0]     lo        ;  // the lastest value of lo
-    
-logic                  ov_sum    ;  // overflow
-logic                  op0_lt_op1;  // whether op0 <  op1
-logic [`N_REG-1:0]     op1_comp  ;  // op1's complement
-logic [`N_REG-1:0]     op0_rever ;  // op0's reversal
-logic [`N_REG-1:0]     sum_result;  // add result
-logic [`N_REG-1:0]     mult_op0  ;  // mult op data0
-logic [`N_REG-1:0]     mult_op1  ;  // mult op data1
+logic [`N_REG-1:0]     logic_out      ;  // save logic operator result
+logic [`N_REG-1:0]     shift_out      ;  // save shift operator result
+logic [`N_REG-1:0]     move_out       ;  // save move  operator result
+logic [`N_REG-1:0]     arith_out      ;  // save arith operator result
+logic [(2*`N_REG)-1:0] m_add_sub_out  ;  // save madd, msub, maddu, msubu operator result
+logic                  m_add_sub_streq;  // streq from madd, msub, maddu, msubu 
+     
+logic [`N_REG-1:0]     hi         ;  // the lastest value of hi
+logic [`N_REG-1:0]     lo         ;  // the lastest value of lo
+     
+logic                  ov_sum     ;  // overflow
+logic                  op0_lt_op1 ;  // whether op0 <  op1
+logic [`N_REG-1:0]     op1_comp   ;  // op1's complement
+logic [`N_REG-1:0]     op0_rever  ;  // op0's reversal
+logic [`N_REG-1:0]     sum_result ;  // add result
+logic [`N_REG-1:0]     mult_op0   ;  // mult op data0
+logic [`N_REG-1:0]     mult_op1   ;  // mult op data1
+ 
+logic [(2*`N_REG)-1:0] hilo_temp  ;  // mult -> temp result
+logic [(2*`N_REG)-1:0] mul_result ;  // mul result
 
-logic [(2*`N_REG)-1:0] hilo_temp ;  // mult -> temp result
-logic [(2*`N_REG)-1:0] mul_result;  // mul result
+logic                  div_streq  ;
+// alu_op -> calc div
+always_comb begin
+    div_streq   = `NO_STOP;
+    o_divsigned = 'b0;
+    o_dividend  = 'b0;
+    o_divisor   = 'b0;
+    o_divstart  = 'b0;
+    case( i_alu_op )
+    `EXE_DIV_OP: begin
+        if( i_div_ready == 1'b1 ) begin
+            o_dividend = i_alu_reg_0;
+            o_divisor  = i_alu_reg_1;
+            o_divsigned= 1'b1;  
+            o_divstart = 1'b1;
+            div_streq  = `STOP;
+        end else if( i_div_done == 1'b1 ) begin
+            o_dividend = 'b0;
+            o_divisor  = 'b0;
+            o_divsigned= 1'b0;  
+            o_divstart = 1'b0;
+            div_streq  = `NO_STOP;
+        end else begin
+            o_dividend = 'b0;
+            o_divisor  = 'b0;
+            o_divsigned= 1'b0;  
+            o_divstart = 1'b0;
+            div_streq  = `STOP;
+        end
+    end
+    `EXE_DIVU_OP: begin  
+        if( i_div_ready == 1'b1 ) begin
+            o_dividend = i_alu_reg_0;
+            o_divisor  = i_alu_reg_1;
+            o_divsigned= 1'b0;  
+            o_divstart = 1'b1;
+            div_streq  = `STOP;
+        end else if( i_div_done == 1'b1 ) begin
+            o_dividend = 'b0;
+            o_divisor  = 'b0;
+            o_divsigned= 1'b0;  
+            o_divstart = 1'b0;
+            div_streq  = `NO_STOP;
+        end else begin
+            o_dividend = 'b0;
+            o_divisor  = 'b0;
+            o_divsigned= 1'b0;  
+            o_divstart = 1'b0;
+            div_streq  = `STOP;
+        end
+    end
+    default: begin
+    end
+    endcase
+end
 
 // if sub or ( signed lt ), op1_comp is op1's complement,
 // else op1_comp is op1
@@ -130,19 +204,27 @@ always_comb begin
     endcase
 end
 
-// mul -> signed and mult_op0 is negative 
-assign mult_op0 = ( (( i_alu_op == `EXE_MUL_OP ) || ( i_alu_op == `EXE_MULT_OP ) ) && i_alu_reg_0[31]) ? ( ~i_alu_reg_0 + 1'b1 ): i_alu_reg_0;
-// mul -> signed and mult_op1 is negative
-assign mult_op1 = ( (( i_alu_op == `EXE_MUL_OP ) || ( i_alu_op == `EXE_MULT_OP ) ) && i_alu_reg_1[31]) ? ( ~i_alu_reg_1 + 1'b1 ): i_alu_reg_1;
+// mul -> signed and mult_op0 is negative, madd, msub is signed mul
+assign mult_op0 = ( (( i_alu_op == `EXE_MUL_OP ) || ( i_alu_op == `EXE_MULT_OP ) || ( i_alu_op == `EXE_MADD_OP )|| ( i_alu_op == `EXE_MSUB_OP ) ) && i_alu_reg_0[31])
+                  ? 
+                  ( ~i_alu_reg_0 + 1'b1 )
+                  :
+                  i_alu_reg_0;
+// mul -> signed and mult_op1 is negative, madd, msub is signed mul
+assign mult_op1 = ( (( i_alu_op == `EXE_MUL_OP ) || ( i_alu_op == `EXE_MULT_OP )|| ( i_alu_op == `EXE_MADD_OP )|| ( i_alu_op == `EXE_MSUB_OP ) ) && i_alu_reg_1[31]) 
+                  ? 
+                  ( ~i_alu_reg_1 + 1'b1 )
+                  : 
+                  i_alu_reg_1;
 // temp mul result
 assign hilo_temp = mult_op0 * mult_op1;
 // correct temp mul result -> mul_result
-// 1. signed mult、mul, correct temp mul result:
+// 1. signed mult、mul, madd, msub, correct temp mul result:
 //   1.1 mul_op0, mul_op1 is one negative and one positive, need to get complelment -> mul_result
 //   1.2 mul_op0, mul_op1 is both negative or both positive, mul_temp -> mul_result
-// 2. unsigned multu, mul_temp -> mul_result 
+// 2. unsigned multu, mul_temp , maddu, msubu -> mul_result 
 always_comb begin
-    if( ( i_alu_op == `EXE_MULT_OP ) || (i_alu_op == `EXE_MUL_OP )) begin
+    if( ( i_alu_op == `EXE_MULT_OP ) || (i_alu_op == `EXE_MUL_OP )|| (i_alu_op == `EXE_MADD_OP )|| (i_alu_op == `EXE_MSUB_OP )) begin
         if( i_alu_reg_0[31] ^ i_alu_reg_1[31] == 1'b1 ) begin
             mul_result = ~hilo_temp + 1'b1;
         end else begin
@@ -151,6 +233,59 @@ always_comb begin
     end else begin
         mul_result = hilo_temp;
     end
+end
+
+// alu_op -> calc madd, maddu, msub, msubu
+always_comb begin
+    case( i_alu_op )
+    `EXE_MADD_OP,`EXE_MADDU_OP: begin
+        if( i_cnt == 2'b00) begin             // madd, maddu  -> first clk
+            o_hilo_temp    = mul_result;
+            o_cnt          = 2'b01;
+            m_add_sub_out  = 'b0;
+            m_add_sub_streq= `STOP;
+        end else if( i_cnt == 2'b01 ) begin   // madd, maddu  -> second clk
+            o_hilo_temp    = 'b0;
+            o_cnt          = 2'b10;           // meaningful, but may be unused...
+            m_add_sub_out  = i_hilo_temp + {hi,lo};
+            m_add_sub_streq= `NO_STOP;
+        end else begin
+            o_hilo_temp    = 'b0;
+            o_cnt          = 'b0;
+            m_add_sub_out  = 'b0;
+            m_add_sub_streq= `NO_STOP;
+        end
+    end
+    `EXE_MSUB_OP, `EXE_MSUBU_OP: begin
+        if( i_cnt == 2'b00) begin      
+            o_hilo_temp    = ~mul_result + 1'b1;
+            o_cnt          = 2'b01;
+            m_add_sub_out  = 'b0;
+            m_add_sub_streq= `STOP;
+        end else if( i_cnt == 2'b01 ) begin
+            o_hilo_temp    = 'b0;
+            o_cnt          = 2'b10;            // meaningful, but may be unused...
+            m_add_sub_out  = i_hilo_temp + {hi,lo};
+            m_add_sub_streq= `NO_STOP;
+        end else begin
+            o_hilo_temp    = 'b0;
+            o_cnt          = 'b0;
+            m_add_sub_out  = 'b0;
+            m_add_sub_streq= `NO_STOP;
+        end
+    end
+    default: begin
+        o_hilo_temp    = 'b0;
+        o_cnt          = 'b0;
+        m_add_sub_out  = 'b0;
+        m_add_sub_streq= `NO_STOP;
+    end
+    endcase
+end
+
+// pause pipeline
+always_comb begin
+    o_streq = m_add_sub_streq | div_streq;
 end
 
 // alu_op -> calc move
@@ -253,7 +388,19 @@ end
 
 // o_hilo_wen、o_hi、o_lo
 always_comb begin
-    if( (i_alu_op == `EXE_MULT_OP ) || (i_alu_op == `EXE_MULTU_OP) ) begin
+    if( (( i_alu_op == `EXE_DIV_OP ) || ( i_alu_op == `EXE_DIVU_OP )) && i_div_done ) begin
+        o_hilo_wen = `WRITE_ENABLE;
+        o_hi       = i_remainder;
+        o_lo       = i_quotient;
+    end else if( (( i_alu_op == `EXE_MSUB_OP ) || ( i_alu_op == `EXE_MSUBU_OP )) && ( i_cnt == 2'b01 )) begin
+        o_hilo_wen = `WRITE_ENABLE;
+        o_hi       = m_add_sub_out[63:32];
+        o_lo       = m_add_sub_out[31:0];
+    end else if( (( i_alu_op == `EXE_MADD_OP ) || ( i_alu_op == `EXE_MADDU_OP )) && ( i_cnt == 2'b01 )) begin
+        o_hilo_wen = `WRITE_ENABLE;
+        o_hi       = m_add_sub_out[63:32];
+        o_lo       = m_add_sub_out[31:0];
+    end else if( (i_alu_op == `EXE_MULT_OP ) || (i_alu_op == `EXE_MULTU_OP) ) begin
         o_hilo_wen = `WRITE_ENABLE;
         o_hi       = mul_result[63:32];
         o_lo       = mul_result[31:0];
@@ -271,7 +418,5 @@ always_comb begin
         o_lo       = lo;
     end
 end
-
-assign o_streq = `NO_STOP;
 
 endmodule

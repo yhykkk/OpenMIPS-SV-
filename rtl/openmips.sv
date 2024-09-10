@@ -57,7 +57,14 @@ logic [`N_REG-1:0]          ex2ex_mem_alu_reg_wdata ;
 logic                       ex2ex_mem_hilo_wen      ;
 logic [`N_REG-1:0]          ex2ex_mem_hi            ;
 logic [`N_REG-1:0]          ex2ex_mem_lo            ; 
+logic [`N_REG*2-1:0]        ex2ex_mem_hilo_temp     ;
+logic [1:0]                 ex2ex_mem_cnt           ;
 /********************** define ex2ex_mem  end  ***********************/
+
+/********************** define ex_mem2ex begin ***********************/
+logic [`N_REG*2-1:0]        ex_mem2ex_hilo_temp     ;
+logic [1:0]                 ex_mem2ex_cnt           ;
+/********************** define ex_mem2ex  end  ***********************/
 
 /********************** define ex_mem2mem begin ***********************/
 logic                       ex_mem2mem_wen          ;
@@ -106,6 +113,19 @@ logic                       id2pctrl_streq          ;
 logic                       ex2pctrl_streq          ;
 /********************** define ex2pctrl  end  **********************/
 
+/********************** define ex2div begin **********************/
+logic                       ex2div_divsigned        ;
+logic [`N_REG-1:0]          ex2div_dividend         ;
+logic [`N_REG-1:0]          ex2div_divisor          ;
+logic                       ex2div_divstart         ;
+/********************** define ex2div  end  **********************/
+
+/********************** define div2ex begin **********************/
+logic [`N_REG-1:0]          div2ex_quotient         ;
+logic [`N_REG-1:0]          div2ex_remainder        ;
+logic                       div2ex_div_done         ;
+logic                       div2ex_div_ready        ;   
+/********************** define div2ex  end  **********************/
 pc_reg pc_reg_inst (
     .i_clk   (i_clk             ),
     .i_rst_n (i_rst_n           ),
@@ -224,7 +244,23 @@ ex ex_inst (
     .o_hi            (ex2ex_mem_hi           ),
     .o_lo            (ex2ex_mem_lo           ),
     
-    .o_streq         (ex2pctrl_streq         )
+    .o_streq         (ex2pctrl_streq         ),
+
+    .i_hilo_temp     (ex_mem2ex_hilo_temp    ),
+    .i_cnt           (ex_mem2ex_cnt          ),
+
+    .o_hilo_temp     (ex2ex_mem_hilo_temp    ),
+    .o_cnt           (ex2ex_mem_cnt          ),
+
+    .o_divsigned     (ex2div_divsigned       ),
+    .o_dividend      (ex2div_dividend        ),
+    .o_divisor       (ex2div_divisor         ),
+    .o_divstart      (ex2div_divstart        ),
+
+    .i_quotient      (div2ex_quotient        ),
+    .i_remainder     (div2ex_remainder       ),
+    .i_div_done      (div2ex_div_done        ),
+    .i_div_ready     (div2ex_div_ready       )    
 );
 
 ex_mem ex_mem_inst (
@@ -245,7 +281,12 @@ ex_mem ex_mem_inst (
     .i_ex_lo       (ex2ex_mem_lo           ),
     .o_mem_hilo_wen(ex_mem2mem_hilo_wen    ),
     .o_mem_hi      (ex_mem2mem_hi          ),
-    .o_mem_lo      (ex_mem2mem_lo          )
+    .o_mem_lo      (ex_mem2mem_lo          ),
+
+    .i_hilo_temp   (ex2ex_mem_hilo_temp    ),
+    .i_cnt         (ex2ex_mem_cnt          ),
+    .o_hilo_temp   (ex_mem2ex_hilo_temp    ), 
+    .o_cnt         (ex_mem2ex_cnt          )
 );
 
 mem mem_inst (
@@ -303,4 +344,19 @@ pause_ctrl pause_ctrl_inst(
     .o_stall         (pctrl2others_stall) 
 );
 
+div # (
+    .N_WIDTH( `N_REG )
+)div_inst(
+    .i_clk          (i_clk              ),
+    .i_rst_n        (i_rst_n            ),
+    .i_divsigned    (ex2div_divsigned   ),
+    .i_divstart     (ex2div_divstart    ),
+    .i_dividend     (ex2div_dividend    ),
+    .i_divisor      (ex2div_divisor     ),
+    .o_quotient     (div2ex_quotient    ),
+    .o_remainder    (div2ex_remainder   ),
+    .o_done_vld     (div2ex_div_done    ),
+    .o_ready        (div2ex_div_ready   )     
+);
+ 
 endmodule

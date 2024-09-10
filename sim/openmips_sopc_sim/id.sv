@@ -237,6 +237,20 @@ always_comb begin
                 o_reg_0_ren = `READ_ENABLE;
                 o_reg_1_ren = `READ_ENABLE;
             end
+            `EXE_DIV: begin  
+                o_reg_wen = `WRITE_DISABLE;
+                o_alu_op  = `EXE_DIV_OP;
+                o_alu_sel = `EXE_RES_ARITHMETIC;  // not used in fact
+                o_reg_0_ren = `READ_ENABLE;
+                o_reg_1_ren = `READ_ENABLE;
+            end
+            `EXE_DIVU: begin 
+                o_reg_wen = `WRITE_DISABLE;
+                o_alu_op  = `EXE_DIVU_OP;
+                o_alu_sel = `EXE_RES_ARITHMETIC;  // not used in fact
+                o_reg_0_ren = `READ_ENABLE;
+                o_reg_1_ren = `READ_ENABLE;
+            end
             default: begin
             end
             endcase
@@ -263,6 +277,34 @@ always_comb begin
             o_reg_wen = `WRITE_ENABLE;
             o_alu_op  = `EXE_MUL_OP;
             o_alu_sel = `EXE_RES_MUL;
+            o_reg_0_ren = `READ_ENABLE;
+            o_reg_1_ren = `READ_ENABLE;
+        end
+        `EXE_MADD: begin
+            o_reg_wen = `WRITE_DISABLE;
+            o_alu_op  = `EXE_MADD_OP;
+            o_alu_sel = `EXE_RES_MUL; 
+            o_reg_0_ren = `READ_ENABLE;
+            o_reg_1_ren = `READ_ENABLE;
+        end
+        `EXE_MADDU: begin
+            o_reg_wen = `WRITE_DISABLE;
+            o_alu_op  = `EXE_MADDU_OP;
+            o_alu_sel = `EXE_RES_MUL; 
+            o_reg_0_ren = `READ_ENABLE;
+            o_reg_1_ren = `READ_ENABLE;
+        end
+        `EXE_MSUB: begin
+            o_reg_wen = `WRITE_DISABLE;
+            o_alu_op  = `EXE_MSUB_OP;
+            o_alu_sel = `EXE_RES_MUL; 
+            o_reg_0_ren = `READ_ENABLE;
+            o_reg_1_ren = `READ_ENABLE;
+        end
+        `EXE_MSUBU: begin
+            o_reg_wen = `WRITE_DISABLE;
+            o_alu_op  = `EXE_MSUBU_OP;
+            o_alu_sel = `EXE_RES_MUL; 
             o_reg_0_ren = `READ_ENABLE;
             o_reg_1_ren = `READ_ENABLE;
         end

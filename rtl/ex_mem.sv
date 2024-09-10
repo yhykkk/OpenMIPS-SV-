@@ -25,7 +25,13 @@ module ex_mem (
 
     output logic                    o_mem_hilo_wen,
     output logic [`N_REG-1:0]       o_mem_hi      ,
-    output logic [`N_REG-1:0]       o_mem_lo     
+    output logic [`N_REG-1:0]       o_mem_lo      ,
+    
+    input  logic [(2*`N_REG)-1:0]   i_hilo_temp   ,
+    input  logic [1:0]              i_cnt         ,
+
+    output logic [(2*`N_REG)-1:0]   o_hilo_temp   , 
+    output logic [1:0]              o_cnt         
 );
 // 1. stall[3] == STOP, stall[4]==NO_STOP, ex->pause, mem->run, use nop instruction
 // 2. stall[3] == NO_STOP, ex->run, then come to mem
@@ -59,6 +65,23 @@ always_ff @( posedge i_clk or negedge i_rst_n ) begin
         o_mem_hilo_wen <= o_mem_hilo_wen;
         o_mem_hi       <= o_mem_hi      ;
         o_mem_lo       <= o_mem_lo      ;
+    end
+end
+
+// when ex stage is pausing, give back the hilo_temp
+always_ff@(posedge i_clk or negedge i_rst_n) begin
+    if( !i_rst_n ) begin
+        o_hilo_temp <= 'b0;
+        o_cnt       <= 2'b00;
+    end else if( (i_stall[3] == `STOP) && (i_stall[4]==`NO_STOP) ) begin
+        o_hilo_temp <= i_hilo_temp;
+        o_cnt       <= i_cnt;
+    end else if( i_stall[3] == `NO_STOP ) begin
+        o_hilo_temp <= 'b0;
+        o_cnt       <= 2'b00;
+    end else begin
+        o_hilo_temp <= i_hilo_temp;
+        o_cnt       <= i_cnt;
     end
 end
 endmodule

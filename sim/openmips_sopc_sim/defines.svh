@@ -82,6 +82,13 @@
 `define EXE_MULTU       6'b011001             // instruct multu opcode
 `define EXE_MUL         6'b000010             // instruct mul   opcode
 
+`define EXE_MADD        6'b000000             // instruct madd  opcode
+`define EXE_MADDU       6'b000001             // instruct maddu opcode
+`define EXE_MSUB        6'b000100             // instruct msub  opcode
+`define EXE_MSUBU       6'b000101             // instruct msubu opcode
+
+`define EXE_DIV         6'b011010             // instruct div   opcode
+`define EXE_DIVU        6'b011011             // instruct divu  opcode
 
 `define EXE_AND_OP      8'b00100100           // alu 's 8 bit nop  opcode
 `define EXE_OR_OP       8'b00100101           // alu 's 8 bit or   opcode
@@ -126,12 +133,21 @@
 `define EXE_MULTU_OP    8'b00011001           // alu 's 8 bit multu opcode
 `define EXE_MUL_OP      8'b00000010           // alu 's 8 bit mul   opcode
 
+`define EXE_MADD_OP     8'b10000000           // alu 's 8 bit madd  opcode
+`define EXE_MADDU_OP    8'b01000001           // alu 's 8 bit maddu opcode
+`define EXE_MSUB_OP     8'b01000100           // alu 's 8 bit msub  opcode
+`define EXE_MSUBU_OP    8'b00000101           // alu 's 8 bit msubu opcode
+
+`define EXE_DIV_OP      8'b00011010           // alu 's 8 bit div   opcode
+`define EXE_DIVU_OP     8'b00011011           // alu 's 8 bit divu  opcode
+
 `define EXE_RES_NOP             3'b000  
 `define EXE_RES_LOGIC           3'b001 
 `define EXE_RES_SHIFT           3'b010
 `define EXE_RES_MOVE            3'b011
 `define EXE_RES_ARITHMETIC      3'b100
 `define EXE_RES_MUL             3'b101
+`define EXE_RES_DIV             3'b110
 
 /***************** instruct relatived defination  end  ********************/
 

@@ -26,7 +26,7 @@ initial begin
     @(posedge i_clk );
     i_rst_n <= 1'b1;
 
-    repeat(100) @(posedge i_clk);
+    repeat(200) @(posedge i_clk);
     $stop;
 end
 
