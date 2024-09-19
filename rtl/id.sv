@@ -46,7 +46,7 @@ module id (
     output logic [`N_INST_ADDR-1:0]    o_branch_addr        ,
 
     output logic                       o_delayslot_vld      ,
-    output logic                       o_link_addr          ,
+    output logic [`N_INST_ADDR-1:0]    o_link_addr          ,
  
     output logic                       o_next_delayslot_vld ,
     input  logic                       i_delayslot_vld      
@@ -276,8 +276,8 @@ always_comb begin
             end
             `EXE_JR: begin                        // jr instructor
                 o_reg_wen   = `WRITE_DISABLE;
-                o_alu_op    = `EXE_JR_OP;
-                o_alu_sel   = `EXE_RES_JUMP_BRANCH;
+                o_alu_op    = `EXE_NOP_OP;
+                o_alu_sel   = `EXE_RES_NOP;
                 o_reg_0_ren = `READ_ENABLE; 
                 o_reg_1_ren = `READ_DISABLE;
                 o_link_addr = 'b0;  
@@ -453,37 +453,163 @@ always_comb begin
         imm         = {{16{i_inst[15]}},i_inst[15:0]};
         o_reg_waddr = i_inst[20:16];
     end
-    `EXE_J: begin
+    `EXE_J: begin // j
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_NOP_OP;
+        o_alu_sel = `EXE_RES_NOP;
+        o_reg_0_ren  = `READ_DISABLE;
+        o_reg_1_ren  = `READ_DISABLE;
+        o_link_addr  = 'b0;
+        o_branch_vld = `BRANCH;
+        o_next_delayslot_vld = `DELAY_SLOT;
+        o_branch_addr= {pc_plus_4[31:28],i_inst[25:0],2'b00}; 
     end
-    `EXE_JAL: begin  
-
+    `EXE_JAL: begin  // jal
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_JAL_OP;
+        o_alu_sel = `EXE_RES_JUMP_BRANCH;
+        o_reg_0_ren  = `READ_DISABLE;
+        o_reg_1_ren  = `READ_DISABLE;
+        o_reg_waddr  = 5'd31;
+        o_link_addr  = pc_plus_8;
+        o_branch_vld = `BRANCH;
+        o_next_delayslot_vld = `DELAY_SLOT;
+        o_branch_addr= {pc_plus_4[31:28],i_inst[25:0],2'b00};
     end
-    `EXE_BEQ: begin   
-
+    `EXE_BEQ: begin // beq
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_NOP_OP   ;
+        o_alu_sel = `EXE_RES_NOP;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+        if( o_op_reg_0 == o_op_reg_1 ) begin
+            o_branch_addr = pc_plus_4 + imm_sll2_signed_ext;
+            o_branch_vld  = `BRANCH;
+            o_next_delayslot_vld = `DELAY_SLOT;
+        end else begin
+            o_branch_addr = 'b0;
+            o_branch_vld  = `NO_BRANCH;
+            o_next_delayslot_vld = `NOT_DELAY_SLOT;
+        end
     end
-    `EXE_BGTZ: begin  
-
+    `EXE_BGTZ: begin // bgtz
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_NOP_OP;
+        o_alu_sel = `EXE_RES_NOP;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_DISABLE;
+        if( ( o_op_reg_0[31]==1'b0 ) && ( o_op_reg_0 != 'b0 )) begin // > 0
+            o_branch_addr = pc_plus_4 + imm_sll2_signed_ext;
+            o_branch_vld  = `BRANCH;
+            o_next_delayslot_vld = `DELAY_SLOT;
+        end else begin
+            o_branch_addr = 'b0;
+            o_branch_vld  = `NO_BRANCH;
+            o_next_delayslot_vld = `NOT_DELAY_SLOT;
+        end
     end
-    `EXE_BLEZ: begin  
-
-
+    `EXE_BLEZ: begin // blez  --> <= 0
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_NOP_OP;
+        o_alu_sel = `EXE_RES_NOP;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_DISABLE;
+        if( ( o_op_reg_0[31]==1'b1 ) || ( o_op_reg_0 == 'b0 )) begin // <0 || =0
+            o_branch_addr = pc_plus_4 + imm_sll2_signed_ext;
+            o_branch_vld  = `BRANCH;
+            o_next_delayslot_vld = `DELAY_SLOT;
+        end else begin
+            o_branch_addr = 'b0;
+            o_branch_vld  = `NO_BRANCH;
+            o_next_delayslot_vld = `NOT_DELAY_SLOT;
+        end
     end
     `EXE_BNE: begin  
-
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_NOP_OP   ;  // fix
+        o_alu_sel = `EXE_RES_NOP;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+        if( o_op_reg_0 != o_op_reg_1 ) begin
+            o_branch_addr = pc_plus_4 + imm_sll2_signed_ext;
+            o_branch_vld  = `BRANCH;
+            o_next_delayslot_vld = `DELAY_SLOT;
+        end else begin
+            o_branch_addr = 'b0;
+            o_branch_vld  = `NO_BRANCH;
+            o_next_delayslot_vld = `NOT_DELAY_SLOT;
+        end
     end
 
     `EXE_REGIMM: begin 
         case( op3 )
         `EXE_BGEZ: begin  
-
+            o_reg_wen = `WRITE_DISABLE;
+            o_alu_op  = `EXE_NOP_OP;
+            o_alu_sel = `EXE_RES_NOP;
+            o_reg_0_ren = `READ_ENABLE;
+            o_reg_1_ren = `READ_DISABLE;
+            if( o_op_reg_0[31] == 1'b0 ) begin
+                o_branch_addr = pc_plus_4 + imm_sll2_signed_ext;
+                o_branch_vld  = `BRANCH;
+                o_next_delayslot_vld = `DELAY_SLOT;
+            end else begin
+                o_branch_addr = 'b0;
+                o_branch_vld  = `NO_BRANCH;
+                o_next_delayslot_vld = `NOT_DELAY_SLOT;
+            end
         end
         `EXE_BGEZAL: begin 
-
+            o_reg_wen = `WRITE_ENABLE;
+            o_alu_op  = `EXE_BGEZAL_OP;
+            o_alu_sel = `EXE_RES_JUMP_BRANCH;
+            o_reg_0_ren = `READ_ENABLE;
+            o_reg_1_ren = `READ_DISABLE;
+            o_link_addr = pc_plus_8;
+            o_reg_waddr = 5'd31;
+            if( o_op_reg_0[31] == 1'b0 ) begin
+                o_branch_addr = pc_plus_4 + imm_sll2_signed_ext;
+                o_branch_vld  = `BRANCH;
+                o_next_delayslot_vld = `DELAY_SLOT;
+            end else begin
+                o_branch_addr = 'b0;
+                o_branch_vld  = `NO_BRANCH;
+                o_next_delayslot_vld = `NOT_DELAY_SLOT;
+            end
         end
         `EXE_BLTZ: begin  
-
+            o_reg_wen = `WRITE_DISABLE;
+            o_alu_op  = `EXE_NOP_OP;
+            o_alu_sel = `EXE_RES_NOP;
+            o_reg_0_ren = `READ_ENABLE;
+            o_reg_1_ren = `READ_DISABLE;
+            if( o_op_reg_0[31] == 1'b1 ) begin
+                o_branch_addr = pc_plus_4 + imm_sll2_signed_ext;
+                o_branch_vld  = `BRANCH;
+                o_next_delayslot_vld = `DELAY_SLOT;
+            end else begin
+                o_branch_addr = 'b0;
+                o_branch_vld  = `NO_BRANCH;
+                o_next_delayslot_vld = `NOT_DELAY_SLOT;
+            end
         end
         `EXE_BLTZAL: begin
+            o_reg_wen = `WRITE_ENABLE;
+            o_alu_op  = `EXE_BLTZAL_OP;
+            o_alu_sel = `EXE_RES_JUMP_BRANCH;
+            o_reg_0_ren = `READ_ENABLE;
+            o_reg_1_ren = `READ_DISABLE;
+            o_link_addr = pc_plus_8;
+            o_reg_waddr = 5'd31;
+            if( o_op_reg_0[31] == 1'b1 ) begin
+                o_branch_addr = pc_plus_4 + imm_sll2_signed_ext;
+                o_branch_vld  = `BRANCH;
+                o_next_delayslot_vld = `DELAY_SLOT;
+            end else begin
+                o_branch_addr = 'b0;
+                o_branch_vld  = `NO_BRANCH;
+                o_next_delayslot_vld = `NOT_DELAY_SLOT;
+            end
         end
         endcase
     end
@@ -565,6 +691,9 @@ always_comb begin
         end
     end
 end
+
+// output o_delayslot_vld
+assign o_delayslot_vld = i_delayslot_vld;
 
 assign o_streq = `NO_STOP;
 

@@ -48,7 +48,10 @@ module ex (
     input  logic [`N_REG-1:0]       i_quotient      ,
     input  logic [`N_REG-1:0]       i_remainder     ,
     input  logic                    i_div_done      ,
-    input  logic                    i_div_ready         
+    input  logic                    i_div_ready     ,
+
+    input  logic                    i_delayslot_vld ,
+    input  logic [`N_INST_ADDR-1:0] i_link_addr     
 );
 
 logic [`N_REG-1:0]     logic_out      ;  // save logic operator result
@@ -379,6 +382,9 @@ always_comb begin
     end
     `EXE_RES_MUL: begin
         o_alu_reg_wdata = mul_result[31:0];
+    end
+    `EXE_RES_JUMP_BRANCH: begin
+        o_alu_reg_wdata = i_link_addr;
     end
     default: begin
         o_alu_reg_wdata = 'b0;

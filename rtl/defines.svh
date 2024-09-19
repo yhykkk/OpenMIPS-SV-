@@ -61,6 +61,7 @@
 
 `define EXE_SYNC        6'b001111             // instruct sync opcode
 `define EXE_PREF        6'b110011             // instruct pref opcode
+
 `define EXE_SPECIAL     6'b000000             // instruct special  opcode
 `define EXE_SPECIAL2    6'b011100             // instruct special2 opcode
 `define EXE_REGIMM      6'b000001             // instruct regimm   opcode
@@ -162,6 +163,17 @@
 
 `define EXE_JR_OP       8'b01001000           // alu 's 8 bit jr    opcode
 `define EXE_JALR_OP     8'b01001001           // alu 's 8 bit jalr  opcode
+`define EXE_J_OP        8'b10000010           // alu 's 8 bit j     opcode
+`define EXE_JAL_OP      8'b01000011           // alu 's 8 bit jal   opcode
+`define EXE_BEQ_OP      8'b10000100           // alu 's 8 bit beq   opcode
+`define EXE_BGTZ_OP     8'b01000111           // alu 's 8 bit bgtz  opcode
+`define EXE_BLEZ_OP     8'b01000110           // alu 's 8 bit blez  opcode    
+`define EXE_BNE_OP      8'b01000101           // alu 's 8 bit bne   opcode  
+`define EXE_BGEZ_OP     8'b00000001           // alu 's 8 bit bgez  opcode          
+`define EXE_BGEZAL_OP   8'b01010001           // alu 's 8 bit bgezal opcode
+`define EXE_BLTZ_OP     8'b11000000           // alu 's 8 bit bltz  opcode
+`define EXE_BLTZAL_OP   8'b01010000           // alu 's 8 bit bltzal opcode
+
 
 `define EXE_RES_NOP             3'b000  
 `define EXE_RES_LOGIC           3'b001 

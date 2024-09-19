@@ -34,6 +34,9 @@ logic [`N_REG-1:0]          id2ex_op_reg_0          ;
 logic [`N_REG-1:0]          id2ex_op_reg_1          ;
 logic                       id2ex_reg_wen           ;
 logic [`N_REG_ADDR-1:0]     id2ex_reg_waddr         ;
+logic                       id2ex_delayslot_vld     ;
+logic [`N_INST_ADDR-1:0]    id2ex_link_addr         ;
+logic                       id2ex_next_delayslot_vld;
 /********************** define id2ex  end  ***********************/
 
 /********************** define regfile2id begin ***********************/
@@ -48,6 +51,8 @@ logic [`N_REG-1:0]          id_ex2ex_ex_reg_0       ;
 logic [`N_REG-1:0]          id_ex2ex_ex_reg_1       ;
 logic                       id_ex2ex_ex_reg_wen     ;
 logic [`N_REG_ADDR-1:0]     id_ex2ex_ex_reg_waddr   ;
+logic                       id_ex2ex_delayslot_vld  ;
+logic [`N_INST_ADDR-1:0]    id_ex2ex_link_addr      ;
 /********************** define id_ex2ex  end  ***********************/
 
 /********************** define ex2ex_mem begin ***********************/
@@ -126,12 +131,25 @@ logic [`N_REG-1:0]          div2ex_remainder        ;
 logic                       div2ex_div_done         ;
 logic                       div2ex_div_ready        ;   
 /********************** define div2ex  end  **********************/
+
+/********************** define id2pc begin **********************/
+logic                       id2pc_branch_vld        ;
+logic [`N_INST_ADDR-1:0]    id2pc_branch_addr       ;
+/********************** define id2pc  end  **********************/
+
+/********************** define id_ex2id begin **********************/
+logic                       id_ex2id_delayslot_vld  ;
+/********************** define id_ex2id  end  **********************/
+
 pc_reg pc_reg_inst (
-    .i_clk   (i_clk             ),
-    .i_rst_n (i_rst_n           ),
-    .i_stall (pctrl2others_stall),
-    .o_pc    (o_inst_addr       ),
-    .o_ce    (o_inst_ren        ) 
+    .i_clk        (i_clk             ),
+    .i_rst_n      (i_rst_n           ),
+    .i_stall      (pctrl2others_stall),
+    .o_pc         (o_inst_addr       ),
+    .o_ce         (o_inst_ren        ),
+
+    .i_branch_addr(id2pc_branch_addr ),
+    .i_branch_vld (id2pc_branch_vld  )
 );
 
 if_id if_id_inst ( 
@@ -144,40 +162,50 @@ if_id if_id_inst (
     .o_id_inst (if_id2id_inst     ) 
 );
 
-id id_inst (
-    .i_rst_n      (i_rst_n                ),
+id id_inst ( 
+    .i_rst_n             (i_rst_n                 ),
 
-    .i_pc         (if_id2id_pc            ),
-    .i_inst       (if_id2id_inst          ),
+    .i_pc                (if_id2id_pc             ),
+    .i_inst              (if_id2id_inst           ),
 
     // input regfile value
-    .i_reg_0_data (regfile2id_rdata_0     ),
-    .i_reg_1_data (regfile2id_rdata_1     ),
+    .i_reg_0_data        (regfile2id_rdata_0      ),
+    .i_reg_1_data        (regfile2id_rdata_1      ),
 
     // output regfile read ctrl signal
-    .o_reg_0_addr (id2regfile_reg_0_addr  ),
-    .o_reg_0_ren  (id2regfile_reg_0_ren   ),
-    .o_reg_1_addr (id2regfile_reg_1_addr  ),
-    .o_reg_1_ren  (id2regfile_reg_1_ren   ),
+    .o_reg_0_addr        (id2regfile_reg_0_addr   ),
+    .o_reg_0_ren         (id2regfile_reg_0_ren    ),
+    .o_reg_1_addr        (id2regfile_reg_1_addr   ),
+    .o_reg_1_ren         (id2regfile_reg_1_ren    ),
 
     // output signal to execute state 
-    .o_alu_op     (id2ex_alu_op           ),  // operator sub type  --> or , and , xor ...
-    .o_alu_sel    (id2ex_alu_sel          ),  // operator type      --> logic , arithmetic operation
-    .o_op_reg_0   (id2ex_op_reg_0         ),  // operate data 0
-    .o_op_reg_1   (id2ex_op_reg_1         ),  // operate data 1
-    .o_reg_wen    (id2ex_reg_wen          ),  // dst reg w enable signal
-    .o_reg_waddr  (id2ex_reg_waddr        ),  // dst reg addr
+    .o_alu_op            (id2ex_alu_op            ),  // operator sub type  --> or , and , xor ...
+    .o_alu_sel           (id2ex_alu_sel           ),  // operator type      --> logic , arithmetic operation
+    .o_op_reg_0          (id2ex_op_reg_0          ),  // operate data 0
+    .o_op_reg_1          (id2ex_op_reg_1          ),  // operate data 1
+    .o_reg_wen           (id2ex_reg_wen           ),  // dst reg w enable signal
+    .o_reg_waddr         (id2ex_reg_waddr         ),  // dst reg addr
 
      // input signal from ex stage
-    .i_ex_wen     (ex2ex_mem_alu_reg_wen  ),
-    .i_ex_waddr   (ex2ex_mem_alu_reg_waddr),
-    .i_ex_wdata   (ex2ex_mem_alu_reg_wdata),
+    .i_ex_wen            (ex2ex_mem_alu_reg_wen   ),
+    .i_ex_waddr          (ex2ex_mem_alu_reg_waddr ),
+    .i_ex_wdata          (ex2ex_mem_alu_reg_wdata ),
     // input signal from mem stage
-    .i_mem_wen    (mem2mem_wb_wen         ),
-    .i_mem_waddr  (mem2mem_wb_waddr       ),
-    .i_mem_wdata  (mem2mem_wb_wdata       ),
+    .i_mem_wen           (mem2mem_wb_wen          ),
+    .i_mem_waddr         (mem2mem_wb_waddr        ),
+    .i_mem_wdata         (mem2mem_wb_wdata        ),
 
-    .o_streq      (id2pctrl_streq         )
+    .o_streq             (id2pctrl_streq          ),
+
+    .o_branch_addr       (id2pc_branch_addr       ),
+    .o_branch_vld        (id2pc_branch_vld        ),
+
+    .o_delayslot_vld     (id2ex_delayslot_vld     ),
+    .o_link_addr         (id2ex_link_addr         ),
+    
+    .o_next_delayslot_vld(id2ex_next_delayslot_vld),
+
+    .i_delayslot_vld     (id_ex2id_delayslot_vld  )
 );
 
 regfile regfile_inst (
@@ -196,23 +224,31 @@ regfile regfile_inst (
 );
 
 id_ex id_ex_inst (
-    .i_clk         (i_clk                ),
-    .i_rst_n       (i_rst_n              ),
+    .i_clk               (i_clk                    ),
+    .i_rst_n             (i_rst_n                  ),
 
-    .i_id_alu_op   (id2ex_alu_op         ),
-    .i_id_alu_sel  (id2ex_alu_sel        ),
-    .i_id_reg_0    (id2ex_op_reg_0       ),
-    .i_id_reg_1    (id2ex_op_reg_1       ),
-    .i_id_reg_wen  (id2ex_reg_wen        ),
-    .i_id_reg_waddr(id2ex_reg_waddr      ),  
-    .i_stall       (pctrl2others_stall   ), 
+    .i_id_alu_op         (id2ex_alu_op             ),
+    .i_id_alu_sel        (id2ex_alu_sel            ),
+    .i_id_reg_0          (id2ex_op_reg_0           ),
+    .i_id_reg_1          (id2ex_op_reg_1           ),
+    .i_id_reg_wen        (id2ex_reg_wen            ),
+    .i_id_reg_waddr      (id2ex_reg_waddr          ),  
+    .i_stall             (pctrl2others_stall       ), 
 
-    .o_ex_alu_op   (id_ex2ex_ex_alu_op   ),
-    .o_ex_alu_sel  (id_ex2ex_ex_alu_sel  ),
-    .o_ex_reg_0    (id_ex2ex_ex_reg_0    ),
-    .o_ex_reg_1    (id_ex2ex_ex_reg_1    ),
-    .o_ex_reg_wen  (id_ex2ex_ex_reg_wen  ),
-    .o_ex_reg_waddr(id_ex2ex_ex_reg_waddr)
+    .o_ex_alu_op         (id_ex2ex_ex_alu_op       ),
+    .o_ex_alu_sel        (id_ex2ex_ex_alu_sel      ),
+    .o_ex_reg_0          (id_ex2ex_ex_reg_0        ),
+    .o_ex_reg_1          (id_ex2ex_ex_reg_1        ),
+    .o_ex_reg_wen        (id_ex2ex_ex_reg_wen      ),
+    .o_ex_reg_waddr      (id_ex2ex_ex_reg_waddr    ),
+
+    .i_id_delayslot_vld  (id2ex_delayslot_vld      ),
+    .i_id_link_addr      (id2ex_link_addr          ),
+    .i_next_delayslot_vld(id2ex_next_delayslot_vld ),
+
+    .o_ex_delayslot_vld  (id_ex2ex_delayslot_vld   ),
+    .o_ex_link_addr      (id_ex2ex_link_addr       ),
+    .o_delayslot_vld     (id_ex2id_delayslot_vld   )
 );
 
 ex ex_inst (
@@ -260,7 +296,10 @@ ex ex_inst (
     .i_quotient      (div2ex_quotient        ),
     .i_remainder     (div2ex_remainder       ),
     .i_div_done      (div2ex_div_done        ),
-    .i_div_ready     (div2ex_div_ready       )    
+    .i_div_ready     (div2ex_div_ready       ),
+
+    .i_delayslot_vld (id_ex2ex_delayslot_vld ),
+    .i_link_addr     (id_ex2ex_link_addr     )
 );
 
 ex_mem ex_mem_inst (

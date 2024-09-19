@@ -33,6 +33,12 @@
 `define STOP           1'b1       // pause pipeline
 `define NO_STOP        1'b0       // no pause pipeline
 
+`define BRANCH         1'b1       // branch
+`define NO_BRANCH      1'b0       // no branch
+
+`define DELAY_SLOT     1'b1       // in delayslot 
+`define NOT_DELAY_SLOT 1'b0       // not in delayslot
+
 /***************** global defination  end  ********************/
 
 /***************** instruct relatived defination begin ********************/
@@ -55,6 +61,7 @@
 
 `define EXE_SYNC        6'b001111             // instruct sync opcode
 `define EXE_PREF        6'b110011             // instruct pref opcode
+
 `define EXE_SPECIAL     6'b000000             // instruct special  opcode
 `define EXE_SPECIAL2    6'b011100             // instruct special2 opcode
 `define EXE_REGIMM      6'b000001             // instruct regimm   opcode
@@ -89,6 +96,19 @@
 
 `define EXE_DIV         6'b011010             // instruct div   opcode
 `define EXE_DIVU        6'b011011             // instruct divu  opcode
+
+`define EXE_J           6'b000010             // instruct j      opcode   
+`define EXE_JAL         6'b000011             // instruct jal    opcode
+`define EXE_JALR        6'b001001             // instruct jalr   opcode
+`define EXE_JR          6'b001000             // instruct jr     opcode
+`define EXE_BEQ         6'b000100             // instruct beq    opcode
+`define EXE_BGEZ        5'b00001              // instruct bgez   opcode         
+`define EXE_BGEZAL      5'b10001              // instruct bgezal opcode
+`define EXE_BGTZ        6'b000111             // instruct bgtz   opcode
+`define EXE_BLEZ        6'b000110             // instruct blez   opcode
+`define EXE_BLTZ        5'b00000              // instruct bltz   opcode
+`define EXE_BLTZAL      5'b10000              // instruct bltzal opcode     
+`define EXE_BNE         6'b000101             // instruct bne    opcode  
 
 `define EXE_AND_OP      8'b00100100           // alu 's 8 bit nop  opcode
 `define EXE_OR_OP       8'b00100101           // alu 's 8 bit or   opcode
@@ -141,6 +161,20 @@
 `define EXE_DIV_OP      8'b00011010           // alu 's 8 bit div   opcode
 `define EXE_DIVU_OP     8'b00011011           // alu 's 8 bit divu  opcode
 
+`define EXE_JR_OP       8'b01001000           // alu 's 8 bit jr    opcode
+`define EXE_JALR_OP     8'b01001001           // alu 's 8 bit jalr  opcode
+`define EXE_J_OP        8'b10000010           // alu 's 8 bit j     opcode
+`define EXE_JAL_OP      8'b01000011           // alu 's 8 bit jal   opcode
+`define EXE_BEQ_OP      8'b10000100           // alu 's 8 bit beq   opcode
+`define EXE_BGTZ_OP     8'b01000111           // alu 's 8 bit bgtz  opcode
+`define EXE_BLEZ_OP     8'b01000110           // alu 's 8 bit blez  opcode    
+`define EXE_BNE_OP      8'b01000101           // alu 's 8 bit bne   opcode  
+`define EXE_BGEZ_OP     8'b00000001           // alu 's 8 bit bgez  opcode          
+`define EXE_BGEZAL_OP   8'b01010001           // alu 's 8 bit bgezal opcode
+`define EXE_BLTZ_OP     8'b11000000           // alu 's 8 bit bltz  opcode
+`define EXE_BLTZAL_OP   8'b01010000           // alu 's 8 bit bltzal opcode
+
+
 `define EXE_RES_NOP             3'b000  
 `define EXE_RES_LOGIC           3'b001 
 `define EXE_RES_SHIFT           3'b010
@@ -148,6 +182,7 @@
 `define EXE_RES_ARITHMETIC      3'b100
 `define EXE_RES_MUL             3'b101
 `define EXE_RES_DIV             3'b110
+`define EXE_RES_JUMP_BRANCH     3'b111  
 
 /***************** instruct relatived defination  end  ********************/
 
