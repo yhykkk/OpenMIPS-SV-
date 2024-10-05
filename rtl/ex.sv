@@ -51,7 +51,12 @@ module ex (
     input  logic                    i_div_ready     ,
 
     input  logic                    i_delayslot_vld ,
-    input  logic [`N_INST_ADDR-1:0] i_link_addr     
+    input  logic [`N_INST_ADDR-1:0] i_link_addr     ,
+
+    input  logic [`N_INST_DATA-1:0] i_inst          ,
+    output logic [`N_ALU_OP-1:0]    o_alu_op        ,
+    output logic [`N_MEM_ADDR-1:0]  o_mem_addr      ,
+    output logic [`N_MEM_DATA-1:0]  o_mem_data     
 );
 
 logic [`N_REG-1:0]     logic_out      ;  // save logic operator result
@@ -425,4 +430,12 @@ always_comb begin
     end
 end
 
+// alu op transer to mem stage to get load/store 's sub type
+assign o_alu_op = i_alu_op;
+// mem 's addr
+// i_alu_reg_0 -> base GPR 's value
+// i_inst[15:0] -> offset
+assign o_mem_addr = i_alu_reg_0 + {{16{i_inst[15]}},i_inst[15:0]};
+// mem 's data, or lwl,lwr 's origin value
+assign o_mem_data = i_alu_reg_1;
 endmodule

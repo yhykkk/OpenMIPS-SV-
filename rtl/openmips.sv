@@ -12,7 +12,15 @@ module openmips (
     input  logic [`N_INST_DATA-1:0]  i_inst_data ,
 
     output logic                     o_inst_ren  ,
-    output logic [`N_INST_ADDR-1:0]  o_inst_addr
+    output logic [`N_INST_ADDR-1:0]  o_inst_addr ,
+
+    input  logic [`N_MEM_DATA-1:0]   i_ram_data  ,
+
+    output logic [`N_MEM_ADDR-1:0]   o_ram_addr  ,
+    output logic [`N_MEM_DATA-1:0]   o_ram_data  ,
+    output logic                     o_ram_we    ,
+    output logic                     o_ram_ce    ,
+    output logic [3:0]               o_ram_sel    
 );
 
 /********************** define if_id2id begin ***********************/
@@ -37,6 +45,7 @@ logic [`N_REG_ADDR-1:0]     id2ex_reg_waddr         ;
 logic                       id2ex_delayslot_vld     ;
 logic [`N_INST_ADDR-1:0]    id2ex_link_addr         ;
 logic                       id2ex_next_delayslot_vld;
+logic [`N_INST_ADDR-1:0]    id2ex_inst              ;
 /********************** define id2ex  end  ***********************/
 
 /********************** define regfile2id begin ***********************/
@@ -53,6 +62,7 @@ logic                       id_ex2ex_ex_reg_wen     ;
 logic [`N_REG_ADDR-1:0]     id_ex2ex_ex_reg_waddr   ;
 logic                       id_ex2ex_delayslot_vld  ;
 logic [`N_INST_ADDR-1:0]    id_ex2ex_link_addr      ;
+logic [`N_INST_ADDR-1:0]    id_ex2ex_inst           ;
 /********************** define id_ex2ex  end  ***********************/
 
 /********************** define ex2ex_mem begin ***********************/
@@ -64,6 +74,9 @@ logic [`N_REG-1:0]          ex2ex_mem_hi            ;
 logic [`N_REG-1:0]          ex2ex_mem_lo            ; 
 logic [`N_REG*2-1:0]        ex2ex_mem_hilo_temp     ;
 logic [1:0]                 ex2ex_mem_cnt           ;
+logic [`N_ALU_OP-1:0]       ex2ex_mem_alu_op        ;
+logic [`N_MEM_ADDR-1:0]     ex2ex_mem_addr          ;
+logic [`N_MEM_DATA-1:0]     ex2ex_mem_data          ;
 /********************** define ex2ex_mem  end  ***********************/
 
 /********************** define ex_mem2ex begin ***********************/
@@ -78,6 +91,9 @@ logic [`N_REG_ADDR-1:0]     ex_mem2mem_waddr        ;
 logic                       ex_mem2mem_hilo_wen     ;
 logic [`N_REG-1:0]          ex_mem2mem_hi           ;
 logic [`N_REG-1:0]          ex_mem2mem_lo           ;
+logic [`N_ALU_OP-1:0]       ex_mem2mem_aluop        ;
+logic [`N_MEM_ADDR-1:0]     ex_mem2mem_addr         ;
+logic [`N_MEM_DATA-1:0]     ex_mem2mem_data         ;
 /********************** define ex_mem2mem  end  ***********************/
 
 /********************** define mem2mem_wb begin ***********************/
@@ -205,7 +221,9 @@ id id_inst (
     
     .o_next_delayslot_vld(id2ex_next_delayslot_vld),
 
-    .i_delayslot_vld     (id_ex2id_delayslot_vld  )
+    .i_delayslot_vld     (id_ex2id_delayslot_vld  ),
+
+    .o_inst              (id2ex_inst              )
 );
 
 regfile regfile_inst (
@@ -248,7 +266,10 @@ id_ex id_ex_inst (
 
     .o_ex_delayslot_vld  (id_ex2ex_delayslot_vld   ),
     .o_ex_link_addr      (id_ex2ex_link_addr       ),
-    .o_delayslot_vld     (id_ex2id_delayslot_vld   )
+    .o_delayslot_vld     (id_ex2id_delayslot_vld   ),
+
+    .i_id_inst           (id2ex_inst               ),
+    .o_ex_inst           (id_ex2ex_inst            )
 );
 
 ex ex_inst (
@@ -299,7 +320,12 @@ ex ex_inst (
     .i_div_ready     (div2ex_div_ready       ),
 
     .i_delayslot_vld (id_ex2ex_delayslot_vld ),
-    .i_link_addr     (id_ex2ex_link_addr     )
+    .i_link_addr     (id_ex2ex_link_addr     ),
+
+    .i_inst          (id_ex2ex_inst          ),
+    .o_alu_op        (ex2ex_mem_alu_op       ),
+    .o_mem_addr      (ex2ex_mem_addr         ),
+    .o_mem_data      (ex2ex_mem_data         )
 );
 
 ex_mem ex_mem_inst (
@@ -325,25 +351,44 @@ ex_mem ex_mem_inst (
     .i_hilo_temp   (ex2ex_mem_hilo_temp    ),
     .i_cnt         (ex2ex_mem_cnt          ),
     .o_hilo_temp   (ex_mem2ex_hilo_temp    ), 
-    .o_cnt         (ex_mem2ex_cnt          )
+    .o_cnt         (ex_mem2ex_cnt          ),
+    
+    .i_ex_aluop    (ex2ex_mem_alu_op       ),
+    .i_ex_mem_addr (ex2ex_mem_addr         ),
+    .i_ex_mem_data (ex2ex_mem_data         ),
+
+    .o_mem_aluop   (ex_mem2mem_aluop       ),
+    .o_mem_addr    (ex_mem2mem_addr        ),
+    .o_mem_data    (ex_mem2mem_data        )
 );
 
 mem mem_inst (
-    .i_rst_n   (i_rst_n            ),
-    .i_wen     (ex_mem2mem_wen     ),
-    .i_waddr   (ex_mem2mem_waddr   ),
-    .i_wdata   (ex_mem2mem_wdata   ),
+    .i_rst_n    (i_rst_n            ),
+    .i_wen      (ex_mem2mem_wen     ),
+    .i_waddr    (ex_mem2mem_waddr   ),
+    .i_wdata    (ex_mem2mem_wdata   ),
 
-    .o_wen     (mem2mem_wb_wen     ),
-    .o_waddr   (mem2mem_wb_waddr   ),
-    .o_wdata   (mem2mem_wb_wdata   ),
+    .o_wen      (mem2mem_wb_wen     ),
+    .o_waddr    (mem2mem_wb_waddr   ),
+    .o_wdata    (mem2mem_wb_wdata   ),
 
-    .i_hilo_wen(ex_mem2mem_hilo_wen),
-    .i_hi      (ex_mem2mem_hi      ),
-    .i_lo      (ex_mem2mem_lo      ),
-    .o_hilo_wen(mem2mem_wb_hilo_wen),
-    .o_hi      (mem2mem_wb_hi      ),
-    .o_lo      (mem2mem_wb_lo      ) 
+    .i_hilo_wen (ex_mem2mem_hilo_wen),
+    .i_hi       (ex_mem2mem_hi      ),
+    .i_lo       (ex_mem2mem_lo      ),
+    .o_hilo_wen (mem2mem_wb_hilo_wen),
+    .o_hi       (mem2mem_wb_hi      ),
+    .o_lo       (mem2mem_wb_lo      ),
+
+    .i_alu_op   (ex_mem2mem_aluop   ),
+    .i_mem_addr (ex_mem2mem_addr    ),
+    .i_mem_data (ex_mem2mem_data    ),
+
+    .o_mem_addr (o_ram_addr         ),
+    .o_mem_wdata(o_ram_data         ),
+    .o_mem_we   (o_ram_we           ),
+    .o_mem_sel  (o_ram_sel          ),
+    .o_mem_ce   (o_ram_ce           ),
+    .i_mem_rdata(i_ram_data         )
 );
 
 mem_wb mem_wb_inst (

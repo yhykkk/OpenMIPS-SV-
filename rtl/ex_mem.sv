@@ -31,7 +31,15 @@ module ex_mem (
     input  logic [1:0]              i_cnt         ,
 
     output logic [(2*`N_REG)-1:0]   o_hilo_temp   , 
-    output logic [1:0]              o_cnt         
+    output logic [1:0]              o_cnt         ,
+
+    input  logic [`N_ALU_OP-1:0]    i_ex_aluop    ,
+    input  logic [`N_MEM_ADDR-1:0]  i_ex_mem_addr ,
+    input  logic [`N_MEM_DATA-1:0]  i_ex_mem_data ,
+
+    output logic [`N_ALU_OP-1:0]    o_mem_aluop   ,
+    output logic [`N_MEM_ADDR-1:0]  o_mem_addr    ,
+    output logic [`N_MEM_DATA-1:0]  o_mem_data  
 );
 // 1. stall[3] == STOP, stall[4]==NO_STOP, ex->pause, mem->run, use nop instruction
 // 2. stall[3] == NO_STOP, ex->run, then come to mem
@@ -44,6 +52,9 @@ always_ff @( posedge i_clk or negedge i_rst_n ) begin
         o_mem_hilo_wen <= `WRITE_DISABLE;
         o_mem_hi       <= 'b0;
         o_mem_lo       <= 'b0;
+        o_mem_aluop    <= `EXE_NOP_OP;
+        o_mem_addr     <= 'b0;  
+        o_mem_data     <= 'b0; 
     end else if( (i_stall[3] == `STOP) && (i_stall[4] == `NO_STOP) ) begin
         o_mem_waddr <= `NOP_REG_ADDR;
         o_mem_wen   <= `WRITE_DISABLE;
@@ -51,6 +62,9 @@ always_ff @( posedge i_clk or negedge i_rst_n ) begin
         o_mem_hilo_wen <= `WRITE_DISABLE;
         o_mem_lo       <= 'b0;
         o_mem_hi       <= 'b0;
+        o_mem_aluop    <= `EXE_NOP_OP;
+        o_mem_addr     <= 'b0;  
+        o_mem_data     <= 'b0; 
     end else if( i_stall[3] == `NO_STOP) begin
         o_mem_wen      <= i_ex_wen;
         o_mem_wdata    <= i_ex_wdata;
@@ -58,6 +72,9 @@ always_ff @( posedge i_clk or negedge i_rst_n ) begin
         o_mem_hilo_wen <= i_ex_hilo_wen;
         o_mem_hi       <= i_ex_hi;
         o_mem_lo       <= i_ex_lo;
+        o_mem_aluop    <= i_ex_aluop;
+        o_mem_addr     <= i_ex_mem_addr;  
+        o_mem_data     <= i_ex_mem_data; 
     end else begin
         o_mem_wen      <= o_mem_wen     ;
         o_mem_wdata    <= o_mem_wdata   ;
@@ -65,6 +82,9 @@ always_ff @( posedge i_clk or negedge i_rst_n ) begin
         o_mem_hilo_wen <= o_mem_hilo_wen;
         o_mem_hi       <= o_mem_hi      ;
         o_mem_lo       <= o_mem_lo      ;
+        o_mem_aluop    <= o_mem_aluop   ;
+        o_mem_addr     <= o_mem_addr    ;
+        o_mem_data     <= o_mem_data    ;
     end
 end
 

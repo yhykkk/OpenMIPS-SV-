@@ -49,7 +49,9 @@ module id (
     output logic [`N_INST_ADDR-1:0]    o_link_addr          ,
  
     output logic                       o_next_delayslot_vld ,
-    input  logic                       i_delayslot_vld      
+    input  logic                       i_delayslot_vld      ,
+    
+    output logic [`N_INST_DATA-1:0]    o_inst          
 );
 
 logic [`N_INST_OP-1:0]     op0;
@@ -72,6 +74,8 @@ assign pc_plus_4 = i_pc + 'd4;  // the 1nd instruction after the current instruc
 assign pc_plus_8 = i_pc + 'd8;  // the 2nd instruction after the current instruction -> address
 
 assign imm_sll2_signed_ext = {{14{i_inst[15]}},i_inst[15:0],2'b00};
+
+assign o_inst = i_inst;
 
 // decode instruct
 always_comb begin
@@ -613,7 +617,97 @@ always_comb begin
         end
         endcase
     end
-
+    `EXE_LB: begin
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_LB_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_DISABLE;
+        o_reg_waddr = i_inst[20:16];
+    end
+    `EXE_LBU: begin
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_LBU_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_DISABLE;
+        o_reg_waddr = i_inst[20:16];
+    end
+    `EXE_LH: begin
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_LH_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_DISABLE;
+        o_reg_waddr = i_inst[20:16];
+    end
+    `EXE_LHU: begin
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_LHU_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_DISABLE;
+        o_reg_waddr = i_inst[20:16];
+    end
+    `EXE_LW: begin
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_LW_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_DISABLE;
+        o_reg_waddr = i_inst[20:16];
+    end
+    `EXE_LWL: begin
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_LWL_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+        o_reg_waddr = i_inst[20:16];
+    end
+    `EXE_LWR: begin
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_LWR_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+        o_reg_waddr = i_inst[20:16];
+    end
+    `EXE_SB: begin
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_SB_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+    end
+    `EXE_SH: begin
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_SH_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+    end
+    `EXE_SW: begin
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_SW_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+    end
+    `EXE_SWL: begin
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_SWL_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+    end
+    `EXE_SWR:begin
+        o_reg_wen = `WRITE_DISABLE;
+        o_alu_op  = `EXE_SWR_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+    end
     default: begin
     end
     endcase

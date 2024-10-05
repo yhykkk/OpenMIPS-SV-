@@ -110,6 +110,19 @@
 `define EXE_BLTZAL      5'b10000              // instruct bltzal opcode     
 `define EXE_BNE         6'b000101             // instruct bne    opcode  
 
+`define EXE_LB          6'b100000             // instruct lb     opcode
+`define EXE_LBU         6'b100100             // instruct lbu    opcode
+`define EXE_LH          6'b100001             // instruct lh     opcode
+`define EXE_LHU         6'b100101             // instruct lhu    opcode
+`define EXE_LW          6'b100011             // instruct lw     opcode
+`define EXE_LWL         6'b100010             // instruct lwl    opcode  
+`define EXE_LWR         6'b100110             // instruct lwr    opcode 
+`define EXE_SB          6'b101000             // instruct sb     opcode  
+`define EXE_SH          6'b101001             // instruct sh     opcode  
+`define EXE_SW          6'b101011             // instruct sw     opcode  
+`define EXE_SWL         6'b101010             // instruct swl    opcode 
+`define EXE_SWR         6'b101110             // instruct swr    opcode
+
 `define EXE_AND_OP      8'b00100100           // alu 's 8 bit nop  opcode
 `define EXE_OR_OP       8'b00100101           // alu 's 8 bit or   opcode
 `define EXE_XOR_OP      8'b00100110           // alu 's 8 bit xor  opcode
@@ -174,6 +187,18 @@
 `define EXE_BLTZ_OP     8'b11000000           // alu 's 8 bit bltz  opcode
 `define EXE_BLTZAL_OP   8'b01010000           // alu 's 8 bit bltzal opcode
 
+`define EXE_LB_OP       8'b10100000           // alu 's 8 bit lb     opcode
+`define EXE_LBU_OP      8'b01100100           // alu 's 8 bit lbu    opcode
+`define EXE_LH_OP       8'b10100001           // alu 's 8 bit lh     opcode
+`define EXE_LHU_OP      8'b01100101           // alu 's 8 bit lhu    opcode
+`define EXE_LW_OP       8'b01100011           // alu 's 8 bit lw     opcode
+`define EXE_LWL_OP      8'b01100010           // alu 's 8 bit lwl    opcode  
+`define EXE_LWR_OP      8'b10100110           // alu 's 8 bit lwr    opcode 
+`define EXE_SB_OP       8'b00101000           // alu 's 8 bit sb     opcode  
+`define EXE_SH_OP       8'b00101001           // alu 's 8 bit sh     opcode  
+`define EXE_SW_OP       8'b01101011           // alu 's 8 bit sw     opcode  
+`define EXE_SWL_OP      8'b00101010           // alu 's 8 bit swl    opcode 
+`define EXE_SWR_OP      8'b00101110           // alu 's 8 bit swr    opcode
 
 `define EXE_RES_NOP             3'b000  
 `define EXE_RES_LOGIC           3'b001 
@@ -181,7 +206,7 @@
 `define EXE_RES_MOVE            3'b011
 `define EXE_RES_ARITHMETIC      3'b100
 `define EXE_RES_MUL             3'b101
-`define EXE_RES_DIV             3'b110
+`define EXE_RES_LOAD_STORE      3'b110
 `define EXE_RES_JUMP_BRANCH     3'b111  
 
 /***************** instruct relatived defination  end  ********************/
@@ -189,8 +214,11 @@
 /***************** instruct rom relatived defination begin ********************/
 `define N_INST_ADDR     32                   // instruct rom 's address width
 `define N_INST_DATA     32                   // instruct rom 's data width
+`define N_MEM_ADDR      32                   // data ram 's address width
+`define N_MEM_DATA      32                   // data ram 's data width
 `define NUM_INST_MEM    131072               // instruct rom 's space in real --> 128 KB
 `define N_INST_ADDR_USE 17                   // instruct rom 's address width in use  [less than N_INST_ADDR]
+`define NUM_DATA_MEM    131072               // data ram 's space in real --> 128 KB
 /***************** instruct rom relatived defination  end  ********************/
 
 /***************** general registers relatived defination begin ********************/

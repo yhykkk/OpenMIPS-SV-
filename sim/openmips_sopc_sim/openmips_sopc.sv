@@ -10,16 +10,32 @@ module openmips_sopc (
     input  logic    i_rst_n 
 );
 
-logic                     inst_ren ;
-logic [`N_INST_ADDR-1:0]  inst_addr;
-logic [`N_INST_DATA-1:0]  inst     ;
+/********** instruction rom interface *********/
+logic                     inst_ren  ;
+logic [`N_INST_ADDR-1:0]  inst_addr ;
+logic [`N_INST_DATA-1:0]  inst      ;
+
+/********** data ram interface *********/
+logic [`N_MEM_ADDR-1:0]   o_ram_addr; 
+logic [`N_MEM_DATA-1:0]   o_ram_data; 
+logic                     o_ram_we  ; 
+logic                     o_ram_ce  ; 
+logic [3:0]               o_ram_sel ; 
+logic [`N_MEM_DATA-1:0]   i_ram_data;
 
 openmips openmips_inst (
-    .i_clk       (i_clk    ),
-    .i_rst_n     (i_rst_n  ),
-    .i_inst_data (inst     ),
-    .o_inst_ren  (inst_ren ),
-    .o_inst_addr (inst_addr)
+    .i_clk       (i_clk     ),
+    .i_rst_n     (i_rst_n   ),
+    .i_inst_data (inst      ),
+    .o_inst_ren  (inst_ren  ),
+    .o_inst_addr (inst_addr ),
+
+    .i_ram_data  (i_ram_data),
+    .o_ram_addr  (o_ram_addr),
+    .o_ram_data  (o_ram_data),
+    .o_ram_we    (o_ram_we  ),
+    .o_ram_ce    (o_ram_ce  ),
+    .o_ram_sel   (o_ram_sel )  
 );
 
 inst_rom inst_rom_inst (
@@ -29,5 +45,14 @@ inst_rom inst_rom_inst (
     .o_inst  (inst     )
 );
 
+data_ram data_ram_inst (
+    .i_clk   (i_clk     ),
+    .i_ce    (o_ram_ce  ),
+    .i_data  (o_ram_data),
+    .i_addr  (o_ram_addr),
+    .i_we    (o_ram_we  ),
+    .i_sel   (o_ram_sel ),
+    .o_data  (i_ram_data)
+);
 
 endmodule
