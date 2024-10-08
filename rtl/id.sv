@@ -708,6 +708,23 @@ always_comb begin
         o_reg_0_ren = `READ_ENABLE;
         o_reg_1_ren = `READ_ENABLE;
     end
+    `EXE_LL: begin 
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_LL_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_DISABLE;
+        o_reg_waddr = i_inst[20:16];
+    end
+    `EXE_SC: begin 
+        o_reg_wen = `WRITE_ENABLE;
+        o_alu_op  = `EXE_SC_OP;
+        o_alu_sel = `EXE_RES_LOAD_STORE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_1_ren = `READ_ENABLE;
+        o_reg_waddr = i_inst[20:16];
+    end
+
     default: begin
     end
     endcase

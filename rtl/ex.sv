@@ -363,7 +363,7 @@ end
 assign o_alu_reg_waddr = i_alu_reg_waddr;
 
 always_comb begin
-    if( (( i_alu_op == `EXE_ADD_OP ) || ( i_alu_op == `EXE_ADDI_OP) || ( i_alu_op == `EXE_SUB_OP )) && ( ov_sum == 1'b1 )) begin
+    if( ( ( i_alu_op == `EXE_ADD_OP ) || ( i_alu_op == `EXE_ADDI_OP) || ( i_alu_op == `EXE_SUB_OP )) && ( ov_sum == 1'b1 )) begin
         o_alu_reg_wen = `WRITE_DISABLE;
     end else begin
         o_alu_reg_wen   =  i_alu_reg_wen ;

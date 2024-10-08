@@ -6,35 +6,53 @@
 **************************************/
 `include "defines.svh"
 module mem (
-    input  logic                        i_rst_n    ,
-    input  logic                        i_wen      ,
-    input  logic [`N_REG_ADDR-1:0]      i_waddr    ,
-    input  logic [`N_REG-1:0]           i_wdata    ,
+    input  logic                        i_rst_n        ,
+    input  logic                        i_wen          ,
+    input  logic [`N_REG_ADDR-1:0]      i_waddr        ,
+    input  logic [`N_REG-1:0]           i_wdata        ,
+    
+    output logic                        o_wen          ,
+    output logic [`N_REG_ADDR-1:0]      o_waddr        ,
+    output logic [`N_REG-1:0]           o_wdata        ,
+    
+    input  logic                        i_hilo_wen     ,
+    input  logic [`N_REG-1:0]           i_hi           ,
+    input  logic [`N_REG-1:0]           i_lo           ,
+     
+    output logic                        o_hilo_wen     ,
+    output logic [`N_REG-1:0]           o_hi           ,
+    output logic [`N_REG-1:0]           o_lo           ,
+    
+    input  logic [`N_ALU_OP-1:0]        i_alu_op       ,
+    input  logic [`N_MEM_ADDR-1:0]      i_mem_addr     ,
+    input  logic [`N_MEM_DATA-1:0]      i_mem_data     ,
+    
+    output logic [`N_MEM_ADDR-1:0]      o_mem_addr     ,
+    output logic [`N_MEM_DATA-1:0]      o_mem_wdata    ,
+    output logic                        o_mem_we       ,
+    output logic [3:0]                  o_mem_sel      ,
+    output logic                        o_mem_ce       ,
 
-    output logic                        o_wen      ,
-    output logic [`N_REG_ADDR-1:0]      o_waddr    ,
-    output logic [`N_REG-1:0]           o_wdata    ,
+    input  logic [`N_MEM_DATA-1:0]      i_mem_rdata    ,
 
-    input  logic                        i_hilo_wen ,
-    input  logic [`N_REG-1:0]           i_hi       ,
-    input  logic [`N_REG-1:0]           i_lo       ,
- 
-    output logic                        o_hilo_wen ,
-    output logic [`N_REG-1:0]           o_hi       ,
-    output logic [`N_REG-1:0]           o_lo       ,
+    input  logic                        i_llbit        ,
+    input  logic                        i_wb_llbit_wen ,
+    input  logic                        i_wb_llbit_data,
 
-    input  logic [`N_INST_DATA-1:0]     i_alu_op   ,
-    input  logic [`N_MEM_ADDR-1:0]      i_mem_addr ,
-    input  logic [`N_MEM_DATA-1:0]      i_mem_data ,
-
-    output logic [`N_MEM_ADDR-1:0]      o_mem_addr ,
-    output logic [`N_MEM_DATA-1:0]      o_mem_wdata,
-    output logic                        o_mem_we   ,
-    output logic [3:0]                  o_mem_sel  ,
-    output logic                        o_mem_ce   ,
-
-    input  logic [`N_MEM_DATA-1:0]      i_mem_rdata
+    output logic                        o_llbit_wen    ,
+    output logic                        o_llbit_data   
 );
+
+logic llbit ;   // lastest llbit value
+// if wb state to write llbit, wb stage 's value is lastest
+// otherwise, llbit 's output is lastest
+always_comb begin
+    if( i_wb_llbit_wen == `WRITE_ENABLE ) begin
+        llbit = i_wb_llbit_data;
+    end else begin
+        llbit = i_llbit;
+    end
+end
 
 always_comb begin
     o_wen      = i_wen         ;
@@ -48,6 +66,8 @@ always_comb begin
     o_mem_sel  = 4'b1111       ;
     o_mem_ce   = `CHIP_DISABLE ;
     o_mem_wdata= 'b0           ;
+    o_llbit_data= 1'b0         ;
+    o_llbit_wen = 1'b0         ;
 
     case(i_alu_op)
     `EXE_LB_OP :begin 
@@ -136,7 +156,7 @@ always_comb begin
         o_mem_addr = i_mem_addr;
         o_mem_we   = `WRITE_DISABLE;
         o_mem_ce   = `CHIP_ENABLE;
-        o_mem_wdata= i_mem_data;
+        o_wdata    = i_mem_rdata;
         o_mem_ce   = 4'b1111;
     end
     `EXE_LWL_OP:begin 
@@ -220,7 +240,7 @@ always_comb begin
         o_mem_addr  = i_mem_addr;
         o_mem_we    = `WRITE_ENABLE;
         o_mem_ce    = `CHIP_ENABLE;
-        o_mem_wdata = i_mem_data[15:0];
+        o_mem_wdata = i_mem_data;
         o_mem_sel   = 4'b1111;
     end
     `EXE_SWL_OP:begin 
@@ -269,6 +289,29 @@ always_comb begin
         end
         endcase
     end  
+    `EXE_LL_OP: begin
+        o_mem_addr = i_mem_addr;
+        o_mem_we   = `WRITE_DISABLE;
+        o_wdata    = i_mem_rdata;
+        o_llbit_wen= `WRITE_ENABLE;
+        o_llbit_data=1'b1;
+        o_mem_sel  = 4'b1111;
+        o_mem_ce   = `CHIP_ENABLE;
+    end
+    `EXE_SC_OP: begin
+        if( llbit == 1'b1 ) begin
+            o_llbit_wen = `WRITE_ENABLE;
+            o_llbit_data= 1'b0;
+            o_mem_addr = i_mem_addr;
+            o_mem_we   = `WRITE_ENABLE;
+            o_mem_wdata= i_mem_data;
+            o_mem_sel  = 4'b1111;
+            o_mem_ce   = `CHIP_ENABLE;
+            o_wdata    = 'b1;
+        end else begin
+            o_wdata = 'b0;
+        end
+    end
     default    :begin 
     end
 
