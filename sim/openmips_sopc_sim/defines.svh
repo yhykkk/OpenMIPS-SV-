@@ -123,6 +123,9 @@
 `define EXE_SWL         6'b101010             // instruct swl    opcode 
 `define EXE_SWR         6'b101110             // instruct swr    opcode
 
+`define EXE_LL          6'b110000             // instruct ll     opcode
+`define EXE_SC          6'b111000             // instruct sc     opcode
+
 `define EXE_AND_OP      8'b00100100           // alu 's 8 bit nop  opcode
 `define EXE_OR_OP       8'b00100101           // alu 's 8 bit or   opcode
 `define EXE_XOR_OP      8'b00100110           // alu 's 8 bit xor  opcode
@@ -199,6 +202,9 @@
 `define EXE_SW_OP       8'b01101011           // alu 's 8 bit sw     opcode  
 `define EXE_SWL_OP      8'b00101010           // alu 's 8 bit swl    opcode 
 `define EXE_SWR_OP      8'b00101110           // alu 's 8 bit swr    opcode
+
+`define EXE_LL_OP       8'b00110000           // alu 's 8 bit ll     opcode
+`define EXE_SC_OP       8'b00111000           // alu 's 8 bit sc     opcode
 
 `define EXE_RES_NOP             3'b000  
 `define EXE_RES_LOGIC           3'b001 

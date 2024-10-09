@@ -51,7 +51,9 @@ module id (
     output logic                       o_next_delayslot_vld ,
     input  logic                       i_delayslot_vld      ,
     
-    output logic [`N_INST_DATA-1:0]    o_inst          
+    output logic [`N_INST_DATA-1:0]    o_inst               ,
+    
+    input  logic [`N_ALU_OP-1:0]       i_ex_aluop       
 );
 
 logic [`N_INST_OP-1:0]     op0;
@@ -76,6 +78,41 @@ assign pc_plus_8 = i_pc + 'd8;  // the 2nd instruction after the current instruc
 assign imm_sll2_signed_ext = {{14{i_inst[15]}},i_inst[15:0],2'b00};
 
 assign o_inst = i_inst;
+
+logic stallreq_for_loadrelate_reg0;  // reg0 whether have load relate
+logic stallreq_for_loadrelate_reg1;  // reg1 whether have load relate
+logic pre_inst_is_load            ;  // whether last instruction is load
+
+// i_ex_aluop -> is load
+assign pre_inst_is_load = (
+                            (i_ex_aluop == `EXE_LB_OP)  || 
+                            (i_ex_aluop == `EXE_LBU_OP) || 
+                            (i_ex_aluop == `EXE_LH_OP)  || 
+                            (i_ex_aluop == `EXE_LHU_OP) || 
+                            (i_ex_aluop == `EXE_LW_OP)  || 
+                            (i_ex_aluop == `EXE_LWR_OP) || 
+                            (i_ex_aluop == `EXE_LWL_OP) || 
+                            (i_ex_aluop == `EXE_LL_OP)  || 
+                            (i_ex_aluop == `EXE_SC_OP) 
+                          ) ? 1'b1 :1'b0;
+
+// reg0 whether have load relate                         
+always_comb begin
+    if( (pre_inst_is_load == 1'b1) && (i_ex_waddr == o_reg_0_addr) && (o_reg_0_ren == `READ_ENABLE)) begin
+        stallreq_for_loadrelate_reg0  = 1'b1;
+    end else begin
+        stallreq_for_loadrelate_reg0  = 1'b0;
+    end
+end
+
+// reg1 whether have load relate                         
+always_comb begin
+    if( (pre_inst_is_load == 1'b1) && (i_ex_waddr == o_reg_1_addr) && (o_reg_1_ren == `READ_ENABLE)) begin
+        stallreq_for_loadrelate_reg1  = 1'b1;
+    end else begin
+        stallreq_for_loadrelate_reg1  = 1'b0;
+    end
+end
 
 // decode instruct
 always_comb begin
@@ -805,7 +842,7 @@ end
 
 // output o_delayslot_vld
 assign o_delayslot_vld = i_delayslot_vld;
-
-assign o_streq = `NO_STOP;
+// load relate 
+assign o_streq = (stallreq_for_loadrelate_reg0 | stallreq_for_loadrelate_reg1) ? `STOP : `NO_STOP ;
 
 endmodule
