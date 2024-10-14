@@ -206,6 +206,9 @@
 `define EXE_LL_OP       8'b00110000           // alu 's 8 bit ll     opcode
 `define EXE_SC_OP       8'b00111000           // alu 's 8 bit sc     opcode
 
+`define EXE_MFC0_OP     8'b01011101           // alu 's 8 bit mfc0   opcode
+`define EXE_MTC0_OP     8'b11100000           // alu 's 8 bit mtc0   opcode
+
 `define EXE_RES_NOP             3'b000  
 `define EXE_RES_LOGIC           3'b001 
 `define EXE_RES_SHIFT           3'b010
@@ -234,3 +237,17 @@
 `define NUM_REG         32                   // total number of registers
 `define NOP_REG_ADDR    5'b00000             // nop register 's address [index]
 /***************** general registers relatived defination  end  ********************/
+
+/***************** cp relatived defination begin ********************/
+`define CP0_REG_COUNT   5'b01001
+`define CP0_REG_COMPARE 5'b01011 
+`define CP0_REG_STATUS  5'b01100 
+`define CP0_REG_CAUSE   5'b01101 
+`define CP0_REG_EPC     5'b01110 
+`define CP0_REG_PRID    5'b01111 
+`define CP0_REG_CONFIG  5'b10000 
+
+`define CP0_REG_N_ADDR   5
+`define CP0_REG_N_INT    6
+`define INTERRUPT_ASSERT 1'b1
+/***************** cp relatived defination  end  ********************/

@@ -6,40 +6,49 @@
 **************************************/
 `include "defines.svh"
 module ex_mem (
-    input  logic                    i_clk         ,
-    input  logic                    i_rst_n       ,
+    input  logic                       i_clk              ,
+    input  logic                       i_rst_n            ,
+        
+    input  logic                       i_ex_wen           ,
+    input  logic [`N_REG-1:0]          i_ex_wdata         ,
+    input  logic [`N_REG_ADDR-1:0]     i_ex_waddr         ,
+        
+    input  logic [5:0]                 i_stall            ,
+        
+    output logic                       o_mem_wen          ,
+    output logic [`N_REG-1:0]          o_mem_wdata        ,
+    output logic [`N_REG_ADDR-1:0]     o_mem_waddr        ,
+        
+    input  logic                       i_ex_hilo_wen      ,
+    input  logic [`N_REG-1:0]          i_ex_hi            ,
+    input  logic [`N_REG-1:0]          i_ex_lo            ,
+        
+    output logic                       o_mem_hilo_wen     ,
+    output logic [`N_REG-1:0]          o_mem_hi           ,
+    output logic [`N_REG-1:0]          o_mem_lo           ,
+            
+    input  logic [(2*`N_REG)-1:0]      i_hilo_temp        ,
+    input  logic [1:0]                 i_cnt              ,
+        
+    output logic [(2*`N_REG)-1:0]      o_hilo_temp        , 
+    output logic [1:0]                 o_cnt              ,
+        
+    input  logic [`N_ALU_OP-1:0]       i_ex_aluop         ,
+    input  logic [`N_MEM_ADDR-1:0]     i_ex_mem_addr      ,
+    input  logic [`N_MEM_DATA-1:0]     i_ex_mem_data      ,
+        
+    output logic [`N_ALU_OP-1:0]       o_mem_aluop        ,
+    output logic [`N_MEM_ADDR-1:0]     o_mem_addr         ,
+    output logic [`N_MEM_DATA-1:0]     o_mem_data         ,
 
-    input  logic                    i_ex_wen      ,
-    input  logic [`N_REG-1:0]       i_ex_wdata    ,
-    input  logic [`N_REG_ADDR-1:0]  i_ex_waddr    ,
+    input  logic                       i_ex_cp0_reg_wen   ,
+    input  logic [`CP0_REG_N_ADDR-1:0] i_ex_cp0_reg_waddr ,
+    input  logic [`N_REG-1:0]          i_ex_cp0_reg_wdata ,
 
-    input  logic [5:0]              i_stall       ,
+    output logic                       o_mem_cp0_reg_wen  ,
+    output logic [`CP0_REG_N_ADDR-1:0] o_mem_cp0_reg_waddr,
+    output logic [`N_REG-1:0]          o_mem_cp0_reg_wdata 
 
-    output logic                    o_mem_wen     ,
-    output logic [`N_REG-1:0]       o_mem_wdata   ,
-    output logic [`N_REG_ADDR-1:0]  o_mem_waddr   ,
-
-    input  logic                    i_ex_hilo_wen ,
-    input  logic [`N_REG-1:0]       i_ex_hi       ,
-    input  logic [`N_REG-1:0]       i_ex_lo       ,
-
-    output logic                    o_mem_hilo_wen,
-    output logic [`N_REG-1:0]       o_mem_hi      ,
-    output logic [`N_REG-1:0]       o_mem_lo      ,
-    
-    input  logic [(2*`N_REG)-1:0]   i_hilo_temp   ,
-    input  logic [1:0]              i_cnt         ,
-
-    output logic [(2*`N_REG)-1:0]   o_hilo_temp   , 
-    output logic [1:0]              o_cnt         ,
-
-    input  logic [`N_ALU_OP-1:0]    i_ex_aluop    ,
-    input  logic [`N_MEM_ADDR-1:0]  i_ex_mem_addr ,
-    input  logic [`N_MEM_DATA-1:0]  i_ex_mem_data ,
-
-    output logic [`N_ALU_OP-1:0]    o_mem_aluop   ,
-    output logic [`N_MEM_ADDR-1:0]  o_mem_addr    ,
-    output logic [`N_MEM_DATA-1:0]  o_mem_data  
 );
 // 1. stall[3] == STOP, stall[4]==NO_STOP, ex->pause, mem->run, use nop instruction
 // 2. stall[3] == NO_STOP, ex->run, then come to mem
@@ -102,6 +111,27 @@ always_ff@(posedge i_clk or negedge i_rst_n) begin
     end else begin
         o_hilo_temp <= i_hilo_temp;
         o_cnt       <= i_cnt;
+    end
+end
+
+// when ex stage is not pausing, pass the cp0 write info to next stage
+always_ff@(posedge i_clk or negedge i_rst_n) begin
+    if( !i_rst_n ) begin
+        o_mem_cp0_reg_wen   <= `WRITE_DISABLE;
+        o_mem_cp0_reg_waddr <= 'b0;
+        o_mem_cp0_reg_wdata <= 'b0;
+    end else if( (i_stall[3] == `STOP) && (i_stall[4]==`NO_STOP) ) begin
+        o_mem_cp0_reg_wen   <= `WRITE_DISABLE;
+        o_mem_cp0_reg_waddr <= 'b0;
+        o_mem_cp0_reg_wdata <= 'b0;
+    end else if( i_stall[3] == `NO_STOP ) begin
+        o_mem_cp0_reg_wen   <= i_ex_cp0_reg_wen  ;
+        o_mem_cp0_reg_waddr <= i_ex_cp0_reg_waddr;
+        o_mem_cp0_reg_wdata <= i_ex_cp0_reg_wdata;
+    end else begin
+        o_mem_cp0_reg_wen   <= o_mem_cp0_reg_wen  ;
+        o_mem_cp0_reg_waddr <= o_mem_cp0_reg_waddr;
+        o_mem_cp0_reg_wdata <= o_mem_cp0_reg_wdata;
     end
 end
 endmodule

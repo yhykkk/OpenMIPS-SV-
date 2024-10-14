@@ -6,7 +6,6 @@
 **************************************/
 `include "defines.svh"
 module mem (
-    input  logic                        i_rst_n        ,
     input  logic                        i_wen          ,
     input  logic [`N_REG_ADDR-1:0]      i_waddr        ,
     input  logic [`N_REG-1:0]           i_wdata        ,
@@ -40,7 +39,15 @@ module mem (
     input  logic                        i_wb_llbit_data,
 
     output logic                        o_llbit_wen    ,
-    output logic                        o_llbit_data   
+    output logic                        o_llbit_data   ,
+
+    input  logic                        i_cp0_reg_wen  ,
+    input  logic [`CP0_REG_N_ADDR-1:0]  i_cp0_reg_waddr,
+    input  logic [`N_REG-1:0]           i_cp0_reg_wdata,
+
+    output logic                        o_cp0_reg_wen  ,
+    output logic [`CP0_REG_N_ADDR-1:0]  o_cp0_reg_waddr,
+    output logic [`N_REG-1:0]           o_cp0_reg_wdata
 );
 
 logic llbit ;   // lastest llbit value
@@ -316,6 +323,12 @@ always_comb begin
     end
 
     endcase
+end
+
+always_comb begin
+    o_cp0_reg_wen   = i_cp0_reg_wen  ;
+    o_cp0_reg_waddr = i_cp0_reg_waddr;
+    o_cp0_reg_wdata = i_cp0_reg_wdata;
 end
 
 endmodule

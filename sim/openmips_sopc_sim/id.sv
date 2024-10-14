@@ -6,8 +6,6 @@
 **************************************/
 `include "defines.svh"
 module id (
-    input  logic                       i_rst_n              ,
-
     input  logic [`N_INST_ADDR-1:0]    i_pc                 ,
     input  logic [`N_INST_DATA-1:0]    i_inst               ,
 
@@ -798,6 +796,23 @@ always_comb begin
         endcase 
     end else begin
     end
+
+    if( i_inst[31:21] == 11'b0100_000_0000 && i_inst[10:0] == 11'b0 ) begin
+        o_alu_op    = `EXE_MFC0_OP;
+        o_alu_sel   = `EXE_RES_MOVE;
+        o_reg_waddr = i_inst[20:16];
+        o_reg_wen   = `WRITE_ENABLE;
+        o_reg_0_ren = `READ_DISABLE;
+        o_reg_1_ren = `READ_DISABLE;
+    end else if( i_inst[31:21] == 11'b0100_000_0100 && i_inst[10:0] == 11'b0 ) begin
+        o_alu_op    = `EXE_MTC0_OP;
+        o_alu_sel   = `EXE_RES_MOVE;
+        o_reg_wen   = `WRITE_DISABLE;
+        o_reg_0_ren = `READ_ENABLE;
+        o_reg_0_addr= i_inst[20:16];
+        o_reg_1_ren = `READ_DISABLE;
+    end else begin
+    end
 end
 
 // operate data 0 logic
@@ -805,18 +820,14 @@ end
 // 1. if Regfile read port 0 --> read_addr == ex_waddr :  ex_wdata -> o_op_reg_0 
 // 2. if Regfile read port 0 --> read_addr == mem_waddr:  mem_wdata-> o_op_reg_0
 always_comb begin
-    if( i_rst_n == `RST_ENABLE ) begin
-        o_op_reg_0 = 'b0;
+    if( (o_reg_0_ren == 1'b1) && (i_ex_wen == 1'b1 ) && ( i_ex_waddr == o_reg_0_addr ) ) begin
+        o_op_reg_0 = i_ex_wdata;
+    end else if( (o_reg_0_ren == 1'b1) && (i_mem_wen == 1'b1 ) && ( i_mem_waddr == o_reg_0_addr )) begin
+        o_op_reg_0 = i_mem_wdata;
+    end else if( o_reg_0_ren == 1'b1 ) begin
+        o_op_reg_0 = i_reg_0_data;
     end else begin
-        if( (o_reg_0_ren == 1'b1) && (i_ex_wen == 1'b1 ) && ( i_ex_waddr == o_reg_0_addr ) ) begin
-            o_op_reg_0 = i_ex_wdata;
-        end else if( (o_reg_0_ren == 1'b1) && (i_mem_wen == 1'b1 ) && ( i_mem_waddr == o_reg_0_addr )) begin
-            o_op_reg_0 = i_mem_wdata;
-        end else if( o_reg_0_ren == 1'b1 ) begin
-            o_op_reg_0 = i_reg_0_data;
-        end else begin
-            o_op_reg_0 = imm;
-        end
+        o_op_reg_0 = imm;
     end
 end
 
@@ -825,18 +836,14 @@ end
 // 1. if Regfile read port 1 --> read_addr == ex_waddr :  ex_wdata -> o_op_reg_1
 // 2. if Regfile read port 1 --> read_addr == mem_waddr:  mem_wdata-> o_op_reg_1
 always_comb begin
-    if( i_rst_n == `RST_ENABLE ) begin
-        o_op_reg_1 = 'b0;
+    if( (o_reg_1_ren == 1'b1) && (i_ex_wen == 1'b1 ) && ( i_ex_waddr == o_reg_1_addr ) ) begin
+        o_op_reg_1 = i_ex_wdata;
+    end else if( (o_reg_1_ren == 1'b1) && (i_mem_wen == 1'b1 ) && ( i_mem_waddr == o_reg_1_addr )) begin
+        o_op_reg_1 = i_mem_wdata;
+    end else if( o_reg_1_ren == 1'b1 ) begin
+        o_op_reg_1 = i_reg_1_data;
     end else begin
-        if( (o_reg_1_ren == 1'b1) && (i_ex_wen == 1'b1 ) && ( i_ex_waddr == o_reg_1_addr ) ) begin
-            o_op_reg_1 = i_ex_wdata;
-        end else if( (o_reg_1_ren == 1'b1) && (i_mem_wen == 1'b1 ) && ( i_mem_waddr == o_reg_1_addr )) begin
-            o_op_reg_1 = i_mem_wdata;
-        end else if( o_reg_1_ren == 1'b1 ) begin
-            o_op_reg_1 = i_reg_1_data;
-        end else begin
-            o_op_reg_1 = imm;
-        end
+        o_op_reg_1 = imm;
     end
 end
 

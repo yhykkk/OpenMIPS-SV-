@@ -8,7 +8,6 @@ add wave -noupdate -expand -group regfile {/tb_openmips_sopc/openmips_sopc_inst/
 add wave -noupdate -expand -group regfile {/tb_openmips_sopc/openmips_sopc_inst/openmips_inst/regfile_inst/regs[4]}
 add wave -noupdate -expand -group hilo /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/hilo_reg_reg/o_hi
 add wave -noupdate -expand -group hilo /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/hilo_reg_reg/o_lo
-add wave -noupdate -expand -group id /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_rst_n
 add wave -noupdate -expand -group id /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_pc
 add wave -noupdate -expand -group id -color Magenta -radix binary /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_inst
 add wave -noupdate -expand -group id /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/id_inst/i_reg_0_data
@@ -36,7 +35,6 @@ add wave -noupdate -expand -group ex -radix decimal /tb_openmips_sopc/openmips_s
 add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/ex_inst/i_alu_reg_1
 add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/ex_inst/i_alu_reg_waddr
 add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/ex_inst/i_alu_reg_wen
-add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/ex_inst/i_rst_n
 add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/ex_inst/logic_out
 add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/ex_inst/o_alu_reg_waddr
 add wave -noupdate -expand -group ex /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/ex_inst/o_alu_reg_wdata
@@ -58,7 +56,6 @@ add wave -noupdate -expand -group mem /tb_openmips_sopc/openmips_sopc_inst/openm
 add wave -noupdate -expand -group mem -color Magenta /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/i_mem_addr
 add wave -noupdate -expand -group mem -color Magenta /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/i_mem_data
 add wave -noupdate -expand -group mem -color Magenta /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/i_mem_rdata
-add wave -noupdate -expand -group mem /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/i_rst_n
 add wave -noupdate -expand -group mem /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/i_waddr
 add wave -noupdate -expand -group mem /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/i_wdata
 add wave -noupdate -expand -group mem /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/i_wen
@@ -73,8 +70,18 @@ add wave -noupdate -expand -group mem /tb_openmips_sopc/openmips_sopc_inst/openm
 add wave -noupdate -expand -group mem /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/o_waddr
 add wave -noupdate -expand -group mem /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/o_wdata
 add wave -noupdate -expand -group mem /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/mem_inst/o_wen
+add wave -noupdate -expand -group openmips /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/i_interrupt
+add wave -noupdate -expand -group openmips /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/o_timer_interrupt
+add wave -noupdate -expand -group cp0 /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/cp0_inst/o_cause
+add wave -noupdate -expand -group cp0 /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/cp0_inst/o_compare
+add wave -noupdate -expand -group cp0 /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/cp0_inst/o_config
+add wave -noupdate -expand -group cp0 /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/cp0_inst/o_count
+add wave -noupdate -expand -group cp0 /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/cp0_inst/o_data
+add wave -noupdate -expand -group cp0 /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/cp0_inst/o_epc
+add wave -noupdate -expand -group cp0 /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/cp0_inst/o_prid
+add wave -noupdate -expand -group cp0 /tb_openmips_sopc/openmips_sopc_inst/openmips_inst/cp0_inst/o_status
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {343 ns} 0}
+WaveRestoreCursors {{Cursor 1} {14 ns} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 100
@@ -90,4 +97,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {250 ns} {368 ns}
+WaveRestoreZoom {0 ns} {97 ns}

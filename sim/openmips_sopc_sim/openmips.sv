@@ -6,21 +6,24 @@
 **************************************/
 `include "defines.svh"
 module openmips (
-    input  logic                     i_clk       ,
-    input  logic                     i_rst_n     ,
+    input  logic                      i_clk            ,
+    input  logic                      i_rst_n          ,
+      
+    input  logic [`N_INST_DATA-1:0]   i_inst_data      ,
+      
+    output logic                      o_inst_ren       ,
+    output logic [`N_INST_ADDR-1:0]   o_inst_addr      ,
+      
+    input  logic [`N_MEM_DATA-1:0]    i_ram_data       ,
+      
+    output logic [`N_MEM_ADDR-1:0]    o_ram_addr       ,
+    output logic [`N_MEM_DATA-1:0]    o_ram_data       ,
+    output logic                      o_ram_we         ,
+    output logic                      o_ram_ce         ,
+    output logic [3:0]                o_ram_sel        ,
 
-    input  logic [`N_INST_DATA-1:0]  i_inst_data ,
-
-    output logic                     o_inst_ren  ,
-    output logic [`N_INST_ADDR-1:0]  o_inst_addr ,
-
-    input  logic [`N_MEM_DATA-1:0]   i_ram_data  ,
-
-    output logic [`N_MEM_ADDR-1:0]   o_ram_addr  ,
-    output logic [`N_MEM_DATA-1:0]   o_ram_data  ,
-    output logic                     o_ram_we    ,
-    output logic                     o_ram_ce    ,
-    output logic [3:0]               o_ram_sel    
+    input  logic [`CP0_REG_N_INT-1:0] i_interrupt      ,
+    output logic                      o_timer_interrupt
 );
 
 /********************** define if_id2id begin ***********************/
@@ -77,6 +80,10 @@ logic [1:0]                 ex2ex_mem_cnt           ;
 logic [`N_ALU_OP-1:0]       ex2ex_mem_alu_op        ;
 logic [`N_MEM_ADDR-1:0]     ex2ex_mem_addr          ;
 logic [`N_MEM_DATA-1:0]     ex2ex_mem_data          ;
+
+logic                       ex2ex_mem_cp0_reg_wen   ;
+logic [`CP0_REG_N_ADDR-1:0] ex2ex_mem_cp0_reg_waddr ;
+logic [`N_REG-1:0]          ex2ex_mem_cp0_reg_wdata ; 
 /********************** define ex2ex_mem  end  ***********************/
 
 /********************** define ex_mem2ex begin ***********************/
@@ -94,6 +101,9 @@ logic [`N_REG-1:0]          ex_mem2mem_lo           ;
 logic [`N_ALU_OP-1:0]       ex_mem2mem_aluop        ;
 logic [`N_MEM_ADDR-1:0]     ex_mem2mem_addr         ;
 logic [`N_MEM_DATA-1:0]     ex_mem2mem_data         ;
+logic                       ex_mem2mem_cp0_reg_wen  ;
+logic [`CP0_REG_N_ADDR-1:0] ex_mem2mem_cp0_reg_waddr;
+logic [`N_REG-1:0]          ex_mem2mem_cp0_reg_wdata;
 /********************** define ex_mem2mem  end  ***********************/
 
 /********************** define mem2mem_wb begin ***********************/
@@ -105,6 +115,9 @@ logic [`N_REG-1:0]          mem2mem_wb_hi           ;
 logic [`N_REG-1:0]          mem2mem_wb_lo           ;  
 logic                       mem2mem_llbit_wen       ;
 logic                       mem2mem_llbit_data      ;
+logic                       mem2mem_wb_cp0_reg_wen  ;
+logic [`CP0_REG_N_ADDR-1:0] mem2mem_wb_cp0_reg_waddr;
+logic [`N_REG-1:0]          mem2mem_wb_cp0_reg_wdata;
 /********************** define mem2mem_wb  end  ***********************/
 
 /********************** define mem_wb2regfile begin ***********************/
@@ -167,6 +180,20 @@ logic                       llbit2mem_llbit         ;
 logic                       mem_wb2llbit_wen        ;
 logic                       mem_wb2llbit_data       ;
 /********************** define mem_wb2llbit  end  **********************/
+
+/********************** define ex2cp0 begin **********************/
+logic [`CP0_REG_N_ADDR-1:0] ex2cp0_reg_raddr        ;
+/********************** define ex2cp0  end  **********************/
+
+/********************** define mem_wb2cp0 begin **********************/
+logic                       mem_wb2cp0_reg_wen      ;
+logic [`CP0_REG_N_ADDR-1:0] mem_wb2cp0_reg_waddr    ;
+logic [`N_REG-1:0]          mem_wb2cp0_reg_wdata    ;
+/********************** define mem_wb2cp0  end  **********************/
+
+/********************** define cp02ex begin **********************/
+logic [`N_REG-1:0]          cp02ex_data             ;
+/********************** define cp02ex  end  **********************/
 pc_reg pc_reg_inst (
     .i_clk        (i_clk             ),
     .i_rst_n      (i_rst_n           ),
@@ -189,8 +216,6 @@ if_id if_id_inst (
 );
 
 id id_inst ( 
-    .i_rst_n             (i_rst_n                 ),
-
     .i_pc                (if_id2id_pc             ),
     .i_inst              (if_id2id_inst           ),
 
@@ -284,157 +309,193 @@ id_ex id_ex_inst (
     .o_ex_inst           (id_ex2ex_inst            )
 );
 
-ex ex_inst (
-    .i_rst_n         (i_rst_n                ),
-
-    .i_alu_sel       (id_ex2ex_ex_alu_sel    ),
-    .i_alu_op        (id_ex2ex_ex_alu_op     ),
-    .i_alu_reg_0     (id_ex2ex_ex_reg_0      ),
-    .i_alu_reg_1     (id_ex2ex_ex_reg_1      ),
-    .i_alu_reg_wen   (id_ex2ex_ex_reg_wen    ),
-    .i_alu_reg_waddr (id_ex2ex_ex_reg_waddr  ),
+ex ex_inst ( 
+    .i_alu_sel          (id_ex2ex_ex_alu_sel     ),
+    .i_alu_op           (id_ex2ex_ex_alu_op      ),
+    .i_alu_reg_0        (id_ex2ex_ex_reg_0       ),
+    .i_alu_reg_1        (id_ex2ex_ex_reg_1       ),
+    .i_alu_reg_wen      (id_ex2ex_ex_reg_wen     ),
+    .i_alu_reg_waddr    (id_ex2ex_ex_reg_waddr   ),
+        
+    .o_alu_reg_wen      (ex2ex_mem_alu_reg_wen   ),
+    .o_alu_reg_waddr    (ex2ex_mem_alu_reg_waddr ),
+    .o_alu_reg_wdata    (ex2ex_mem_alu_reg_wdata ),
     
-    .o_alu_reg_wen   (ex2ex_mem_alu_reg_wen  ),
-    .o_alu_reg_waddr (ex2ex_mem_alu_reg_waddr),
-    .o_alu_reg_wdata (ex2ex_mem_alu_reg_wdata),
-
-    .i_hi            (hilo2ex_hi             ),
-    .i_lo            (hilo2ex_lo             ),
-
-    .i_mem_hilo_wen  (mem2mem_wb_hilo_wen    ),
-    .i_mem_hi        (mem2mem_wb_hi          ),
-    .i_mem_lo        (mem2mem_wb_lo          ),
-
-    .i_wb_hilo_wen   (mem_wb2hilo_wen        ),
-    .i_wb_hi         (mem_wb2hilo_hi         ),
-    .i_wb_lo         (mem_wb2hilo_lo         ),
-
-    .o_hilo_wen      (ex2ex_mem_hilo_wen     ),
-    .o_hi            (ex2ex_mem_hi           ),
-    .o_lo            (ex2ex_mem_lo           ),
+    .i_hi               (hilo2ex_hi              ),
+    .i_lo               (hilo2ex_lo              ),
     
-    .o_streq         (ex2pctrl_streq         ),
+    .i_mem_hilo_wen     (mem2mem_wb_hilo_wen     ),
+    .i_mem_hi           (mem2mem_wb_hi           ),
+    .i_mem_lo           (mem2mem_wb_lo           ),
+    
+    .i_wb_hilo_wen      (mem_wb2hilo_wen         ),
+    .i_wb_hi            (mem_wb2hilo_hi          ),
+    .i_wb_lo            (mem_wb2hilo_lo          ),
+    
+    .o_hilo_wen         (ex2ex_mem_hilo_wen      ),
+    .o_hi               (ex2ex_mem_hi            ),
+    .o_lo               (ex2ex_mem_lo            ),
+        
+    .o_streq            (ex2pctrl_streq          ),
+    
+    .i_hilo_temp        (ex_mem2ex_hilo_temp     ),
+    .i_cnt              (ex_mem2ex_cnt           ),
+    
+    .o_hilo_temp        (ex2ex_mem_hilo_temp     ),
+    .o_cnt              (ex2ex_mem_cnt           ),
+    
+    .o_divsigned        (ex2div_divsigned        ),
+    .o_dividend         (ex2div_dividend         ),
+    .o_divisor          (ex2div_divisor          ),
+    .o_divstart         (ex2div_divstart         ),
+    
+    .i_quotient         (div2ex_quotient         ),
+    .i_remainder        (div2ex_remainder        ),
+    .i_div_done         (div2ex_div_done         ),
+    .i_div_ready        (div2ex_div_ready        ),
+    
+    .i_delayslot_vld    (id_ex2ex_delayslot_vld  ),
+    .i_link_addr        (id_ex2ex_link_addr      ),
+    
+    .i_inst             (id_ex2ex_inst           ),
+    .o_alu_op           (ex2ex_mem_alu_op        ),
+    .o_mem_addr         (ex2ex_mem_addr          ),
+    .o_mem_data         (ex2ex_mem_data          ),
 
-    .i_hilo_temp     (ex_mem2ex_hilo_temp    ),
-    .i_cnt           (ex_mem2ex_cnt          ),
+    .i_mem_cp0_reg_wen  (ex_mem2mem_cp0_reg_wen  ),
+    .i_mem_cp0_reg_waddr(ex_mem2mem_cp0_reg_waddr),
+    .i_mem_cp0_reg_data (ex_mem2mem_cp0_reg_wdata),
 
-    .o_hilo_temp     (ex2ex_mem_hilo_temp    ),
-    .o_cnt           (ex2ex_mem_cnt          ),
+    .i_wb_cp0_reg_wen   (mem_wb2cp0_reg_wen      ),
+    .i_wb_cp0_reg_waddr (mem_wb2cp0_reg_waddr    ),
+    .i_wb_cp0_reg_data  (mem_wb2cp0_reg_wdata    ),
 
-    .o_divsigned     (ex2div_divsigned       ),
-    .o_dividend      (ex2div_dividend        ),
-    .o_divisor       (ex2div_divisor         ),
-    .o_divstart      (ex2div_divstart        ),
+    .i_cp0_reg_data     (cp02ex_data             ),
+    .o_cp0_reg_raddr    (ex2cp0_reg_raddr        ),
 
-    .i_quotient      (div2ex_quotient        ),
-    .i_remainder     (div2ex_remainder       ),
-    .i_div_done      (div2ex_div_done        ),
-    .i_div_ready     (div2ex_div_ready       ),
-
-    .i_delayslot_vld (id_ex2ex_delayslot_vld ),
-    .i_link_addr     (id_ex2ex_link_addr     ),
-
-    .i_inst          (id_ex2ex_inst          ),
-    .o_alu_op        (ex2ex_mem_alu_op       ),
-    .o_mem_addr      (ex2ex_mem_addr         ),
-    .o_mem_data      (ex2ex_mem_data         )
+    .o_cp0_reg_wen      (ex2ex_mem_cp0_reg_wen   ),
+    .o_cp0_reg_waddr    (ex2ex_mem_cp0_reg_waddr ),
+    .o_cp0_reg_wdata    (ex2ex_mem_cp0_reg_wdata ) 
 );
 
 ex_mem ex_mem_inst (
-    .i_clk         (i_clk                  ),
-    .i_rst_n       (i_rst_n                ),
+    .i_clk              (i_clk                   ),
+    .i_rst_n            (i_rst_n                 ),
+      
+    .i_ex_wen           (ex2ex_mem_alu_reg_wen   ),
+    .i_ex_wdata         (ex2ex_mem_alu_reg_wdata ),
+    .i_ex_waddr         (ex2ex_mem_alu_reg_waddr ),
+    .i_stall            (pctrl2others_stall      ),
+      
+    .o_mem_wen          (ex_mem2mem_wen          ),
+    .o_mem_wdata        (ex_mem2mem_wdata        ),
+    .o_mem_waddr        (ex_mem2mem_waddr        ),
+      
+    .i_ex_hilo_wen      (ex2ex_mem_hilo_wen      ),
+    .i_ex_hi            (ex2ex_mem_hi            ),
+    .i_ex_lo            (ex2ex_mem_lo            ),
+    .o_mem_hilo_wen     (ex_mem2mem_hilo_wen     ),
+    .o_mem_hi           (ex_mem2mem_hi           ),
+    .o_mem_lo           (ex_mem2mem_lo           ),
+      
+    .i_hilo_temp        (ex2ex_mem_hilo_temp     ),
+    .i_cnt              (ex2ex_mem_cnt           ),
+    .o_hilo_temp        (ex_mem2ex_hilo_temp     ), 
+    .o_cnt              (ex_mem2ex_cnt           ),
+          
+    .i_ex_aluop         (ex2ex_mem_alu_op        ),
+    .i_ex_mem_addr      (ex2ex_mem_addr          ),
+    .i_ex_mem_data      (ex2ex_mem_data          ),
+      
+    .o_mem_aluop        (ex_mem2mem_aluop        ),
+    .o_mem_addr         (ex_mem2mem_addr         ),
+    .o_mem_data         (ex_mem2mem_data         ),
 
-    .i_ex_wen      (ex2ex_mem_alu_reg_wen  ),
-    .i_ex_wdata    (ex2ex_mem_alu_reg_wdata),
-    .i_ex_waddr    (ex2ex_mem_alu_reg_waddr),
-    .i_stall       (pctrl2others_stall     ),
+    .i_ex_cp0_reg_wen   (ex2ex_mem_cp0_reg_wen   ),
+    .i_ex_cp0_reg_waddr (ex2ex_mem_cp0_reg_waddr ),
+    .i_ex_cp0_reg_wdata (ex2ex_mem_cp0_reg_wdata ),
 
-    .o_mem_wen     (ex_mem2mem_wen         ),
-    .o_mem_wdata   (ex_mem2mem_wdata       ),
-    .o_mem_waddr   (ex_mem2mem_waddr       ),
-
-    .i_ex_hilo_wen (ex2ex_mem_hilo_wen     ),
-    .i_ex_hi       (ex2ex_mem_hi           ),
-    .i_ex_lo       (ex2ex_mem_lo           ),
-    .o_mem_hilo_wen(ex_mem2mem_hilo_wen    ),
-    .o_mem_hi      (ex_mem2mem_hi          ),
-    .o_mem_lo      (ex_mem2mem_lo          ),
-
-    .i_hilo_temp   (ex2ex_mem_hilo_temp    ),
-    .i_cnt         (ex2ex_mem_cnt          ),
-    .o_hilo_temp   (ex_mem2ex_hilo_temp    ), 
-    .o_cnt         (ex_mem2ex_cnt          ),
-    
-    .i_ex_aluop    (ex2ex_mem_alu_op       ),
-    .i_ex_mem_addr (ex2ex_mem_addr         ),
-    .i_ex_mem_data (ex2ex_mem_data         ),
-
-    .o_mem_aluop   (ex_mem2mem_aluop       ),
-    .o_mem_addr    (ex_mem2mem_addr        ),
-    .o_mem_data    (ex_mem2mem_data        )
+    .o_mem_cp0_reg_wen  (ex_mem2mem_cp0_reg_wen  ),
+    .o_mem_cp0_reg_waddr(ex_mem2mem_cp0_reg_waddr),
+    .o_mem_cp0_reg_wdata(ex_mem2mem_cp0_reg_wdata) 
 );
 
 mem mem_inst (
-    .i_rst_n     (i_rst_n            ),
-    .i_wen       (ex_mem2mem_wen     ),
-    .i_waddr     (ex_mem2mem_waddr   ),
-    .i_wdata     (ex_mem2mem_wdata   ),
+    .i_wen          (ex_mem2mem_wen           ),
+    .i_waddr        (ex_mem2mem_waddr         ),
+    .i_wdata        (ex_mem2mem_wdata         ),
+    
+    .o_wen          (mem2mem_wb_wen           ),
+    .o_waddr        (mem2mem_wb_waddr         ),
+    .o_wdata        (mem2mem_wb_wdata         ),
  
-    .o_wen       (mem2mem_wb_wen     ),
-    .o_waddr     (mem2mem_wb_waddr   ),
-    .o_wdata     (mem2mem_wb_wdata   ),
+    .i_hilo_wen     (ex_mem2mem_hilo_wen      ),
+    .i_hi           (ex_mem2mem_hi            ),
+    .i_lo           (ex_mem2mem_lo            ),
+    .o_hilo_wen     (mem2mem_wb_hilo_wen      ),
+    .o_hi           (mem2mem_wb_hi            ),
+    .o_lo           (mem2mem_wb_lo            ),
  
-    .i_hilo_wen  (ex_mem2mem_hilo_wen),
-    .i_hi        (ex_mem2mem_hi      ),
-    .i_lo        (ex_mem2mem_lo      ),
-    .o_hilo_wen  (mem2mem_wb_hilo_wen),
-    .o_hi        (mem2mem_wb_hi      ),
-    .o_lo        (mem2mem_wb_lo      ),
+    .i_alu_op       (ex_mem2mem_aluop         ),
+    .i_mem_addr     (ex_mem2mem_addr          ),
+    .i_mem_data     (ex_mem2mem_data          ),
  
-    .i_alu_op    (ex_mem2mem_aluop   ),
-    .i_mem_addr  (ex_mem2mem_addr    ),
-    .i_mem_data  (ex_mem2mem_data    ),
- 
-    .o_mem_addr  (o_ram_addr         ),
-    .o_mem_wdata (o_ram_data         ),
-    .o_mem_we    (o_ram_we           ),
-    .o_mem_sel   (o_ram_sel          ),
-    .o_mem_ce    (o_ram_ce           ),
-    .i_mem_rdata (i_ram_data         ),
+    .o_mem_addr     (o_ram_addr               ),
+    .o_mem_wdata    (o_ram_data               ),
+    .o_mem_we       (o_ram_we                 ),
+    .o_mem_sel      (o_ram_sel                ),
+    .o_mem_ce       (o_ram_ce                 ),
+    .i_mem_rdata    (i_ram_data               ),
 
-    .i_llbit     (llbit2mem_llbit    ),
-    .i_wb_llbit_wen (mem_wb2llbit_wen  ),
-    .i_wb_llbit_data(mem_wb2llbit_data ),
+    .i_llbit         (llbit2mem_llbit         ),
+    .i_wb_llbit_wen  (mem_wb2llbit_wen        ),
+    .i_wb_llbit_data (mem_wb2llbit_data       ),
 
-    .o_llbit_wen (mem2mem_llbit_wen  ),
-    .o_llbit_data(mem2mem_llbit_data )
+    .o_llbit_wen     (mem2mem_llbit_wen       ),
+    .o_llbit_data    (mem2mem_llbit_data      ),
+
+    .i_cp0_reg_wen   (ex_mem2mem_cp0_reg_wen  ),
+    .i_cp0_reg_waddr (ex_mem2mem_cp0_reg_waddr),
+    .i_cp0_reg_wdata (ex_mem2mem_cp0_reg_wdata),
+
+    .o_cp0_reg_wen   (mem2mem_wb_cp0_reg_wen  ),
+    .o_cp0_reg_waddr (mem2mem_wb_cp0_reg_waddr),
+    .o_cp0_reg_wdata (mem2mem_wb_cp0_reg_wdata) 
 );
 
 mem_wb mem_wb_inst (
-    .i_clk           (i_clk               ),
-    .i_rst_n         (i_rst_n             ),
+    .i_clk              (i_clk                   ),
+    .i_rst_n            (i_rst_n                 ),
+       
+    .i_mem_waddr        (mem2mem_wb_waddr        ),
+    .i_mem_wdata        (mem2mem_wb_wdata        ),
+    .i_mem_wen          (mem2mem_wb_wen          ),
+    .i_stall            (pctrl2others_stall      ),
+       
+    .o_wb_waddr         (mem_wb2regfile_waddr    ),
+    .o_wb_wdata         (mem_wb2regfile_wdata    ),
+    .o_wb_wen           (mem_wb2regfile_wen      ),
+       
+    .i_mem_hilo_wen     (mem2mem_wb_hilo_wen     ),
+    .i_mem_hi           (mem2mem_wb_hi           ),
+    .i_mem_lo           (mem2mem_wb_lo           ),
+    .o_wb_hilo_wen      (mem_wb2hilo_wen         ),
+    .o_wb_hi            (mem_wb2hilo_hi          ),
+    .o_wb_lo            (mem_wb2hilo_lo          ),
+       
+    .i_mem_llbit_wen    (mem2mem_llbit_wen       ),
+    .i_mem_llbit_data   (mem2mem_llbit_data      ),
+       
+    .o_wb_llbit_wen     (mem_wb2llbit_wen        ),
+    .o_wb_llbit_data    (mem_wb2llbit_data       ),
 
-    .i_mem_waddr     (mem2mem_wb_waddr    ),
-    .i_mem_wdata     (mem2mem_wb_wdata    ),
-    .i_mem_wen       (mem2mem_wb_wen      ),
-    .i_stall         (pctrl2others_stall  ),
+    .i_mem_cp0_reg_wen  (mem2mem_wb_cp0_reg_wen  ),
+    .i_mem_cp0_reg_waddr(mem2mem_wb_cp0_reg_waddr),
+    .i_mem_cp0_reg_wdata(mem2mem_wb_cp0_reg_wdata),
 
-    .o_wb_waddr      (mem_wb2regfile_waddr),
-    .o_wb_wdata      (mem_wb2regfile_wdata),
-    .o_wb_wen        (mem_wb2regfile_wen  ),
-
-    .i_mem_hilo_wen  (mem2mem_wb_hilo_wen ),
-    .i_mem_hi        (mem2mem_wb_hi       ),
-    .i_mem_lo        (mem2mem_wb_lo       ),
-    .o_wb_hilo_wen   (mem_wb2hilo_wen     ),
-    .o_wb_hi         (mem_wb2hilo_hi      ),
-    .o_wb_lo         (mem_wb2hilo_lo      ),
-
-    .i_mem_llbit_wen (mem2mem_llbit_wen   ),
-    .i_mem_llbit_data(mem2mem_llbit_data  ),
-
-    .o_wb_llbit_wen  (mem_wb2llbit_wen    ),
-    .o_wb_llbit_data (mem_wb2llbit_data   )
+    .o_wb_cp0_reg_wen   (mem_wb2cp0_reg_wen      ),
+    .o_wb_cp0_reg_waddr (mem_wb2cp0_reg_waddr    ),
+    .o_wb_cp0_reg_wdata (mem_wb2cp0_reg_wdata    ) 
 );
 
 hilo_reg hilo_reg_reg (
@@ -476,6 +537,30 @@ llbit_reg llbit_reg_inst(
     .i_wen     (mem_wb2llbit_wen  ), 
     .i_llbit   (mem_wb2llbit_data ),
     .o_llbit   (llbit2mem_llbit   )
+);
+
+cp0 cp0_inst (
+    .i_clk            (i_clk                ),
+    .i_rst_n          (i_rst_n              ),
+
+    .i_r_addr         (ex2cp0_reg_raddr     ),
+
+    .i_interrupt      (i_interrupt          ),
+
+    .i_w_en           (mem_wb2cp0_reg_wen   ),
+    .i_w_addr         (mem_wb2cp0_reg_waddr ),   
+    .i_w_data         (mem_wb2cp0_reg_wdata ),
+
+    .o_data           (cp02ex_data          ),
+
+    .o_count          (),
+    .o_compare        (),
+    .o_status         (),
+    .o_cause          (),
+    .o_epc            (),
+    .o_config         (),
+    .o_prid           (),
+    .o_timer_interrupt(o_timer_interrupt    )
 );
  
 endmodule

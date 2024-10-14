@@ -6,57 +6,71 @@
 **************************************/
 `include "defines.svh"
 module ex (
-    input  logic                    i_rst_n         ,
-    input  logic [`N_ALU_SEL-1:0]   i_alu_sel       ,
-    input  logic [`N_ALU_OP-1:0]    i_alu_op        ,
-    input  logic [`N_REG-1:0]       i_alu_reg_0     ,
-    input  logic [`N_REG-1:0]       i_alu_reg_1     ,
-
-    input  logic                    i_alu_reg_wen   ,
-    input  logic [`N_REG_ADDR-1:0]  i_alu_reg_waddr ,
+    input  logic [`N_ALU_SEL-1:0]      i_alu_sel           ,
+    input  logic [`N_ALU_OP-1:0]       i_alu_op            ,
+    input  logic [`N_REG-1:0]          i_alu_reg_0         ,
+    input  logic [`N_REG-1:0]          i_alu_reg_1         ,
+       
+    input  logic                       i_alu_reg_wen       ,
+    input  logic [`N_REG_ADDR-1:0]     i_alu_reg_waddr     ,
+           
+    output logic                       o_alu_reg_wen       ,
+    output logic [`N_REG_ADDR-1:0]     o_alu_reg_waddr     ,
+    output logic [`N_REG-1:0]          o_alu_reg_wdata     ,
+       
+    input  logic [`N_REG-1:0]          i_hi                ,
+    input  logic [`N_REG-1:0]          i_lo                ,
+       
+    input  logic                       i_mem_hilo_wen      ,
+    input  logic [`N_REG-1:0]          i_mem_hi            ,
+    input  logic [`N_REG-1:0]          i_mem_lo            ,
+    input  logic                       i_wb_hilo_wen       ,
+    input  logic [`N_REG-1:0]          i_wb_hi             ,
+    input  logic [`N_REG-1:0]          i_wb_lo             ,
+       
+    output logic                       o_hilo_wen          ,
+    output logic [`N_REG-1:0]          o_hi                ,
+    output logic [`N_REG-1:0]          o_lo                ,
+    output logic                       o_streq             ,
     
-    output logic                    o_alu_reg_wen   ,
-    output logic [`N_REG_ADDR-1:0]  o_alu_reg_waddr ,
-    output logic [`N_REG-1:0]       o_alu_reg_wdata ,
+    input  logic [`N_REG*2-1:0]        i_hilo_temp         ,
+    input  logic [1:0]                 i_cnt               ,
+    
+    output logic [`N_REG*2-1:0]        o_hilo_temp         ,
+    output logic [1:0]                 o_cnt               ,
+    
+    output logic                       o_divsigned         ,
+    output logic [`N_REG-1:0]          o_dividend          ,
+    output logic [`N_REG-1:0]          o_divisor           ,
+    output logic                       o_divstart          ,
+    
+    input  logic [`N_REG-1:0]          i_quotient          ,
+    input  logic [`N_REG-1:0]          i_remainder         ,
+    input  logic                       i_div_done          ,
+    input  logic                       i_div_ready         ,
+    
+    input  logic                       i_delayslot_vld     ,
+    input  logic [`N_INST_ADDR-1:0]    i_link_addr         ,
+    
+    input  logic [`N_INST_DATA-1:0]    i_inst              ,
+    output logic [`N_ALU_OP-1:0]       o_alu_op            ,
+    output logic [`N_MEM_ADDR-1:0]     o_mem_addr          ,
+    output logic [`N_MEM_DATA-1:0]     o_mem_data          ,
 
-    input  logic [`N_REG-1:0]       i_hi            ,
-    input  logic [`N_REG-1:0]       i_lo            ,
+    input  logic                       i_mem_cp0_reg_wen   ,
+    input  logic [`CP0_REG_N_ADDR-1:0] i_mem_cp0_reg_waddr ,
+    input  logic [`N_REG-1:0]          i_mem_cp0_reg_data  ,
 
-    input  logic                    i_mem_hilo_wen  ,
-    input  logic [`N_REG-1:0]       i_mem_hi        ,
-    input  logic [`N_REG-1:0]       i_mem_lo        ,
-    input  logic                    i_wb_hilo_wen   ,
-    input  logic [`N_REG-1:0]       i_wb_hi         ,
-    input  logic [`N_REG-1:0]       i_wb_lo         ,
+    input  logic                       i_wb_cp0_reg_wen    ,
+    input  logic [`CP0_REG_N_ADDR-1:0] i_wb_cp0_reg_waddr  ,
+    input  logic [`N_REG-1:0]          i_wb_cp0_reg_data   ,
 
-    output logic                    o_hilo_wen      ,
-    output logic [`N_REG-1:0]       o_hi            ,
-    output logic [`N_REG-1:0]       o_lo            ,
-    output logic                    o_streq         ,
+    input  logic [`N_REG-1:0]          i_cp0_reg_data      ,
+    output logic [`CP0_REG_N_ADDR-1:0] o_cp0_reg_raddr     ,
 
-    input  logic [`N_REG*2-1:0]     i_hilo_temp     ,
-    input  logic [1:0]              i_cnt           ,
-
-    output logic [`N_REG*2-1:0]     o_hilo_temp     ,
-    output logic [1:0]              o_cnt           ,
-
-    output logic                    o_divsigned     ,
-    output logic [`N_REG-1:0]       o_dividend      ,
-    output logic [`N_REG-1:0]       o_divisor       ,
-    output logic                    o_divstart      ,
-
-    input  logic [`N_REG-1:0]       i_quotient      ,
-    input  logic [`N_REG-1:0]       i_remainder     ,
-    input  logic                    i_div_done      ,
-    input  logic                    i_div_ready     ,
-
-    input  logic                    i_delayslot_vld ,
-    input  logic [`N_INST_ADDR-1:0] i_link_addr     ,
-
-    input  logic [`N_INST_DATA-1:0] i_inst          ,
-    output logic [`N_ALU_OP-1:0]    o_alu_op        ,
-    output logic [`N_MEM_ADDR-1:0]  o_mem_addr      ,
-    output logic [`N_MEM_DATA-1:0]  o_mem_data     
+    output logic                       o_cp0_reg_wen       ,
+    output logic [`CP0_REG_N_ADDR-1:0] o_cp0_reg_waddr     ,
+    output logic [`N_REG-1:0]          o_cp0_reg_wdata     
 );
 
 logic [`N_REG-1:0]     logic_out      ;  // save logic operator result
@@ -296,6 +310,7 @@ always_comb begin
     o_streq = m_add_sub_streq | div_streq;
 end
 
+assign o_cp0_reg_raddr = i_inst[15:11];
 // alu_op -> calc move
 always_comb begin
     move_out = 'b0;
@@ -311,6 +326,15 @@ always_comb begin
     end
     `EXE_MOVN_OP: begin
         move_out = i_alu_reg_1;
+    end
+    `EXE_MFC0_OP: begin
+        if( i_mem_cp0_reg_wen == `WRITE_ENABLE && i_mem_cp0_reg_waddr == i_inst[15:11] ) begin
+            move_out = i_mem_cp0_reg_data;
+        end else if( i_wb_cp0_reg_wen == `WRITE_ENABLE && i_wb_cp0_reg_waddr == i_inst[15:11] ) begin
+            move_out = i_wb_cp0_reg_data;
+        end else begin
+            move_out = i_cp0_reg_data;
+        end
     end
     default: begin
     end
@@ -340,24 +364,20 @@ end
 
 // alu_op -> calc shift
 always_comb begin
-    if( i_rst_n == `RST_ENABLE) begin
-        shift_out = 'b0;
-    end else begin
-        case( i_alu_op )
-        `EXE_SLL_OP: begin
-            shift_out = i_alu_reg_1 << i_alu_reg_0[4:0];
-        end
-        `EXE_SRL_OP: begin
-            shift_out = i_alu_reg_1 >> i_alu_reg_0[4:0];
-        end
-        `EXE_SRA_OP: begin
-            shift_out = ( {32{i_alu_reg_1[31]}} << (6'd32-{1'b0,i_alu_reg_0[4:0]})) | (i_alu_reg_1 >> i_alu_reg_0[4:0]);
-        end 
-        default: begin
-            shift_out = 'b0;
-        end
-        endcase
+    case( i_alu_op )
+    `EXE_SLL_OP: begin
+        shift_out = i_alu_reg_1 << i_alu_reg_0[4:0];
     end
+    `EXE_SRL_OP: begin
+        shift_out = i_alu_reg_1 >> i_alu_reg_0[4:0];
+    end
+    `EXE_SRA_OP: begin
+        shift_out = ( {32{i_alu_reg_1[31]}} << (6'd32-{1'b0,i_alu_reg_0[4:0]})) | (i_alu_reg_1 >> i_alu_reg_0[4:0]);
+    end 
+    default: begin
+        shift_out = 'b0;
+    end
+    endcase
 end
 
 assign o_alu_reg_waddr = i_alu_reg_waddr;
@@ -430,6 +450,18 @@ always_comb begin
     end
 end
 
+always_comb begin
+    if( i_alu_op == `EXE_MTC0_OP ) begin // mtc0 instruction
+        o_cp0_reg_waddr = i_inst[15:11];
+        o_cp0_reg_wen   = `WRITE_ENABLE;
+        o_cp0_reg_wdata = i_alu_reg_0;
+    end else begin
+        o_cp0_reg_waddr = 'b0;
+        o_cp0_reg_wen   = `WRITE_DISABLE;
+        o_cp0_reg_wdata = 'b0;
+    end
+end
+
 // alu op transer to mem stage to get load/store 's sub type
 assign o_alu_op = i_alu_op;
 // mem 's addr
@@ -438,4 +470,5 @@ assign o_alu_op = i_alu_op;
 assign o_mem_addr = i_alu_reg_0 + {{16{i_inst[15]}},i_inst[15:0]};
 // mem 's data, or lwl,lwr 's origin value
 assign o_mem_data = i_alu_reg_1;
+
 endmodule
