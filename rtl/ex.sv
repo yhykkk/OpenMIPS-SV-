@@ -70,7 +70,14 @@ module ex (
 
     output logic                       o_cp0_reg_wen       ,
     output logic [`CP0_REG_N_ADDR-1:0] o_cp0_reg_waddr     ,
-    output logic [`N_REG-1:0]          o_cp0_reg_wdata     
+    output logic [`N_REG-1:0]          o_cp0_reg_wdata     ,
+
+    input  logic [31:0]                i_except_type       ,
+    input  logic [`N_INST_ADDR-1:0]    i_curr_inst_addr    ,
+
+    output logic [31:0]                o_except_type       ,
+    output logic [`N_INST_ADDR-1:0]    o_curr_inst_addr    ,
+    output logic                       o_delayslot_vld    
 );
 
 logic [`N_REG-1:0]     logic_out      ;  // save logic operator result
@@ -95,6 +102,20 @@ logic [(2*`N_REG)-1:0] hilo_temp  ;  // mult -> temp result
 logic [(2*`N_REG)-1:0] mul_result ;  // mul result
 
 logic                  div_streq  ;
+
+logic                  trap_assert;  // whether is trap exception
+logic                  ov_assert  ;  // whether is overflow exception 
+
+// ex stage 's exception is id stage 's exception + trap、overflow
+// 10 bit : trap exception
+// 11 bit : overflow exception
+assign o_except_type = { i_except_type[31:12],ov_assert,trap_assert,i_except_type[9:8],8'h00};
+// whether is in delayslot
+assign o_delayslot_vld = i_delayslot_vld;
+
+// curr stage 's addr
+assign o_curr_inst_addr = i_curr_inst_addr;
+
 // alu_op -> calc div
 always_comb begin
     div_streq   = `NO_STOP;
@@ -150,16 +171,17 @@ always_comb begin
     endcase
 end
 
-// if sub or ( signed lt ), op1_comp is op1's complement,
+// if sub or ( signed lt )、signed trap, op1_comp is op1's complement,
 // else op1_comp is op1
-assign op1_comp = ( (i_alu_op == `EXE_SUB_OP) || (i_alu_op == `EXE_SUBU_OP) || (i_alu_op == `EXE_SLT_OP)) 
+assign op1_comp = ( (i_alu_op == `EXE_SUB_OP) || (i_alu_op == `EXE_SUBU_OP) || (i_alu_op == `EXE_SLT_OP) 
+                    || ( i_alu_op == `EXE_TLT_OP ) || (i_alu_op == `EXE_TLTI_OP) || (i_alu_op == `EXE_TGE_OP) || (i_alu_op == `EXE_TGEI_OP)) 
                   ?
                   (( ~i_alu_reg_1 ) + 1'b1 ) 
                   :
                   i_alu_reg_1;
 // 1. add, op1_comp <-- op1
 // 2. sub, op1_comp <-- op1's complement
-// 3. signed lt, op1_comp <-- op1's complement, result_sum is also the sub result, conduct result whether less than 0 -> (op0 < op1 ?)
+// 3. signed lt, op1_comp, signed trap <-- op1's complement, result_sum is also the sub result, conduct result whether less than 0 -> (op0 < op1 ?)
 assign sum_result = i_alu_reg_0 + op1_comp;
 // overflow,( add,addi )、sub need to judge whether overflow:
 // 1. op0 is positive and op1 is also positive , but the result is negative.
@@ -168,18 +190,52 @@ assign ov_sum = ((!i_alu_reg_0[31]) && (!op1_comp[31]) && sum_result[31])
                 ||
                 (i_alu_reg_0[31] && op1_comp[31] && (!sum_result[31]));
 // op0 less than op1
-// 1. alu_op == EXE_SLT_OP : signed operator
+// 1. compare、trap: signed operator
 //    1.1 op0 is negative, op1 is positive
 //    1.2 op0 is positive, op1 is positive , op0 - op1 < 0
 //    1.3 op0 is negitive, op1 is positive , op0 - op1 < 0
 // 2. unsigned operator -> use " < " operator in direct
-assign op0_lt_op1 = ( i_alu_op == `EXE_SLT_OP) 
+assign op0_lt_op1 = ( (i_alu_op == `EXE_SLT_OP) || (i_alu_op == `EXE_TLT_OP) || ( i_alu_op == `EXE_TLTI_OP) || ( i_alu_op == `EXE_TGE_OP) || (i_alu_op == `EXE_TGEI_OP)) 
                     ?
                     ( (i_alu_reg_0[31] && (!i_alu_reg_1[31])) || ((!i_alu_reg_0[31]) && (!i_alu_reg_1[31]) && sum_result[31] ) || (i_alu_reg_0[31] && i_alu_reg_1[31] && sum_result[31]))
                     :
                     (i_alu_reg_0 < i_alu_reg_1);
 // op0_rever
-assign op0_rever = ~i_alu_reg_0;                   
+assign op0_rever = ~i_alu_reg_0;       
+
+// whether trap assert
+always_comb begin 
+    trap_assert = `TRAP_NOT_ASSERT;
+    case( i_alu_op )
+    // teq, teqi 
+    `EXE_TEQ_OP,`EXE_TEQI_OP: begin 
+        if( i_alu_reg_0 == i_alu_reg_1) begin 
+            trap_assert = `TRAP_ASSERT;
+        end
+    end
+    // tge, tgei, tgeiu, tgeu
+    `EXE_TGE_OP,`EXE_TGEI_OP,`EXE_TGEIU_OP,`EXE_TGEU_OP: begin 
+        if( ~op0_lt_op1 ) begin 
+            trap_assert = `TRAP_ASSERT;
+        end
+    end
+    // tlt, tlti, tltiu, tltu 
+    `EXE_TLT_OP,`EXE_TLTI_OP, `EXE_TLTIU_OP,`EXE_TLTU_OP: begin 
+        if( op0_lt_op1 ) begin
+            trap_assert = `TRAP_ASSERT;
+        end
+    end
+    // tne, tnei
+    `EXE_TNE_OP,`EXE_TNEI_OP: begin 
+        if( i_alu_reg_0 != i_alu_reg_1) begin 
+            trap_assert = `TRAP_ASSERT;
+        end
+    end
+    default: begin 
+    
+    end
+    endcase
+end
 
 // get the lastest value of hi,lo
 always_comb begin
@@ -385,8 +441,10 @@ assign o_alu_reg_waddr = i_alu_reg_waddr;
 always_comb begin
     if( ( ( i_alu_op == `EXE_ADD_OP ) || ( i_alu_op == `EXE_ADDI_OP) || ( i_alu_op == `EXE_SUB_OP )) && ( ov_sum == 1'b1 )) begin
         o_alu_reg_wen = `WRITE_DISABLE;
+        ov_assert = `TRAP_ASSERT; // overflow exception 
     end else begin
-        o_alu_reg_wen   =  i_alu_reg_wen ;
+        o_alu_reg_wen   =  i_alu_reg_wen;
+        ov_assert = `TRAP_NOT_ASSERT; // overflow not exception 
     end
 end
 

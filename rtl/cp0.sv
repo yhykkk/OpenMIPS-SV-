@@ -23,7 +23,11 @@ module cp0 (
     output logic [`N_REG-1:0]          o_epc            ,
     output logic [`N_REG-1:0]          o_config         ,
     output logic [`N_REG-1:0]          o_prid           ,
-    output logic                       o_timer_interrupt
+    output logic                       o_timer_interrupt,
+
+    input  logic [31:0]                i_except_type    ,
+    input  logic [`N_REG-1:0]          i_curr_inst_addr ,
+    input  logic                       i_delayslot_vld   
 );
 
 // reg operate
@@ -43,6 +47,11 @@ always_ff @ (posedge i_clk or negedge i_rst_n) begin
     end else begin
         o_count <= o_count + 1'b1;     // every clk inc
         o_cause[15:10] <= i_interrupt; // cause 's [15:10] -> extern interrupt
+        o_status  <= o_status;
+        o_epc     <= o_epc;
+        o_config  <= o_config;
+        o_prid    <= o_prid;
+        o_compare <= o_compare;
         // when compare is not zero, and count == compare -> time_interrupt is occur
         if( (o_compare != 'b0) && (o_count == o_compare ) ) begin
             o_timer_interrupt <= `INTERRUPT_ASSERT;
@@ -75,6 +84,77 @@ always_ff @ (posedge i_clk or negedge i_rst_n) begin
             end
             endcase
         end
+
+        case(i_except_type)
+        32'h00_00_00_01: begin // external interrupt
+            if( i_delayslot_vld == `DELAY_SLOT ) begin 
+                o_epc <= i_curr_inst_addr - 'd4;
+                o_cause[31] <= 1'b1;   // cause 's BD field
+            end else begin 
+                o_epc <= i_curr_inst_addr;
+                o_cause[31] <= 1'b0; 
+            end
+            o_status[1] <= 1'b1; // status 's EXL field
+            o_cause[6:2] <= 5'b0;// cause 's ExcCode field
+        end
+        32'h00_00_00_08: begin // syscall
+            if( o_status[1] == 1'b0 ) begin 
+                if( i_delayslot_vld==`DELAY_SLOT ) begin 
+                    o_epc <= i_curr_inst_addr - 'd4;
+                    o_cause[31] <= 1'b1;
+                end else begin 
+                    o_epc <= i_curr_inst_addr;
+                    o_cause[31] <= 1'b0; 
+                end
+            end 
+            o_status[1] <= 1'b1;     // status 's EXL field
+            o_cause[6:2] <= 5'b01000;// cause 's ExcCode field
+        end
+        32'h00_00_00_0a: begin // Invalid Instruction
+            if( o_status[1] == 1'b0 ) begin 
+                if( i_delayslot_vld==`DELAY_SLOT ) begin 
+                    o_epc <= i_curr_inst_addr - 'd4;
+                    o_cause[31] <= 1'b1;
+                end else begin 
+                    o_epc <= i_curr_inst_addr;
+                    o_cause[31] <= 1'b0; 
+                end
+            end 
+            o_status[1] <= 1'b1;     // status 's EXL field
+            o_cause[6:2] <= 5'b01010;// cause 's ExcCode field
+        end
+        32'h00_00_00_0d: begin // trap
+            if( o_status[1] == 1'b0 ) begin 
+                if( i_delayslot_vld==`DELAY_SLOT ) begin 
+                    o_epc <= i_curr_inst_addr - 'd4;
+                    o_cause[31] <= 1'b1;
+                end else begin 
+                    o_epc <= i_curr_inst_addr;
+                    o_cause[31] <= 1'b0; 
+                end
+            end 
+            o_status[1] <= 1'b1;     // status 's EXL field
+            o_cause[6:2] <= 5'b01110;// cause 's ExcCode field
+        end
+        32'h00_00_00_0c: begin // overflow
+            if( o_status[1] == 1'b0 ) begin 
+                if( i_delayslot_vld==`DELAY_SLOT ) begin 
+                    o_epc <= i_curr_inst_addr - 'd4;
+                    o_cause[31] <= 1'b1;
+                end else begin 
+                    o_epc <= i_curr_inst_addr;
+                    o_cause[31] <= 1'b0; 
+                end
+            end 
+            o_status[1] <= 1'b1;     // status 's EXL field
+            o_cause[6:2] <= 5'b01100;// cause 's ExcCode field
+        end
+        32'h00_00_00_0e: begin  // eret 
+            o_status[1] <= 1'b0;  
+        end
+        default: begin 
+        end
+        endcase
     end
 end
 

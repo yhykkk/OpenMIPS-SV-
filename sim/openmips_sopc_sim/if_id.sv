@@ -15,13 +15,18 @@ module if_id (
     input  logic [5:0]                i_stall   ,
 
     output logic [`N_INST_ADDR-1:0]   o_id_pc   ,
-    output logic [`N_INST_DATA-1:0]   o_id_inst 
+    output logic [`N_INST_DATA-1:0]   o_id_inst ,
+
+    input  logic                      i_flush  
 );
 // stall[1]==STOP, stall[2]==NOSTOP , fetch stop, id run -> generate nop instruct
 // stall[1]==NOSTOP                 , fetch run
 // others: id_pc,id_inst no change
 always_ff @( posedge i_clk or negedge i_rst_n ) begin
     if( i_rst_n == `RST_ENABLE ) begin
+        o_id_pc   <= 'b0;
+        o_id_inst <= 'b0;
+    end else if( i_flush == 1'b1 ) begin // clear id_pc, id_inst
         o_id_pc   <= 'b0;
         o_id_inst <= 'b0;
     end else if( (i_stall[1] == `STOP) &&(i_stall[2] == `NO_STOP )) begin

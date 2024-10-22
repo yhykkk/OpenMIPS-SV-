@@ -39,6 +39,9 @@
 `define DELAY_SLOT     1'b1       // in delayslot 
 `define NOT_DELAY_SLOT 1'b0       // not in delayslot
 
+`define INTERRUPT_ASSERT 1'b1
+`define TRAP_ASSERT      1'b1 
+`define TRAP_NOT_ASSERT  1'b0   
 /***************** global defination  end  ********************/
 
 /***************** instruct relatived defination begin ********************/
@@ -126,6 +129,22 @@
 `define EXE_LL          6'b110000             // instruct ll     opcode
 `define EXE_SC          6'b111000             // instruct sc     opcode
 
+`define EXE_SYSCALL     6'b001100             // instruct syscall opcode 
+`define EXE_TEQ         6'b110100             // instruct teq     opcode 
+`define EXE_TEQI        5'b01100              // instruct teqi    opcode
+`define EXE_TGE         6'b110000             // instruct tge     opcode 
+`define EXE_TGEI        5'b01000              // instruct tgei    opcode
+`define EXE_TGEIU       5'b01001              // instruct tgeiu   opcode
+`define EXE_TGEU        6'b110001             // instruct tgeu    opcode 
+`define EXE_TLT         6'b110010             // instruct tlt     opcode 
+`define EXE_TLTI        5'b01010              // instruct tlti    opcode
+`define EXE_TLTIU       5'b01011              // instruct tltiu   opcode
+`define EXE_TLTU        6'b110011             // instruct tltu    opcode 
+`define EXE_TNE         6'b110110             // instruct tne     opcode 
+`define EXE_TNEI        5'b01110              // instruct tnei    opcode 
+
+`define EXE_ERET        32'b0100_0010_0000_0000_0000_0000_0001_1000 // instruct eret 
+
 `define EXE_AND_OP      8'b00100100           // alu 's 8 bit nop  opcode
 `define EXE_OR_OP       8'b00100101           // alu 's 8 bit or   opcode
 `define EXE_XOR_OP      8'b00100110           // alu 's 8 bit xor  opcode
@@ -209,6 +228,22 @@
 `define EXE_MFC0_OP     8'b01011101           // alu 's 8 bit mfc0   opcode
 `define EXE_MTC0_OP     8'b11100000           // alu 's 8 bit mtc0   opcode
 
+`define EXE_SYSCALL_OP  8'b01001100           // alu 's 8 bit syscall opcode 
+`define EXE_TEQ_OP      8'b00110100           // alu 's 8 bit teq     opcode 
+`define EXE_TEQI_OP     8'b10001100           // alu 's 8 bit teqi    opcode
+`define EXE_TGE_OP      8'b01110000           // alu 's 8 bit tge     opcode 
+`define EXE_TGEI_OP     8'b10001000           // alu 's 8 bit tgei    opcode
+`define EXE_TGEIU_OP    8'b10001001           // alu 's 8 bit tgeiu   opcode
+`define EXE_TGEU_OP     8'b00110001           // alu 's 8 bit tgeu    opcode 
+`define EXE_TLT_OP      8'b00110010           // alu 's 8 bit tlt     opcode 
+`define EXE_TLTI_OP     8'b10001010           // alu 's 8 bit tlti    opcode
+`define EXE_TLTIU_OP    8'b10001011           // alu 's 8 bit tltiu   opcode
+`define EXE_TLTU_OP     8'b01110011           // alu 's 8 bit tltu    opcode 
+`define EXE_TNE_OP      8'b00110110           // alu 's 8 bit tne     opcode 
+`define EXE_TNEI_OP     8'b01001110           // alu 's 8 bit tnei    opcode 
+
+`define EXE_ERET_OP     8'b11111111           // alu 's 8 bit eret    opcode
+
 `define EXE_RES_NOP             3'b000  
 `define EXE_RES_LOGIC           3'b001 
 `define EXE_RES_SHIFT           3'b010
@@ -249,5 +284,4 @@
 
 `define CP0_REG_N_ADDR   5
 `define CP0_REG_N_INT    6
-`define INTERRUPT_ASSERT 1'b1
 /***************** cp relatived defination  end  ********************/

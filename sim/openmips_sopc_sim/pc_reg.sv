@@ -14,7 +14,10 @@ module pc_reg (
     output logic                    o_ce         ,
 
     input  logic                    i_branch_vld ,
-    input  logic [`N_INST_ADDR-1:0] i_branch_addr
+    input  logic [`N_INST_ADDR-1:0] i_branch_addr,
+
+    input  logic                    i_flush      ,
+    input  logic [`N_INST_ADDR-1:0] i_new_pc
 );
 
 always_ff @(posedge i_clk or negedge i_rst_n ) begin
@@ -30,12 +33,14 @@ always_ff @(posedge i_clk or negedge i_rst_n ) begin
         o_pc <= 'b0;
     end else if( o_ce ==`CHIP_DISABLE) begin
         o_pc <= 'b0;
+    end else if( i_flush == 1'b1 ) begin // when exception occured, jump to new_pc
+        o_pc <= i_new_pc;
     end else if( i_stall[0] == `STOP ) begin
         o_pc <= o_pc;
     end else if( i_branch_vld == `BRANCH ) begin
         o_pc <= i_branch_addr;
     end else begin
-        o_pc <= o_pc + 4'h4;   // when ce enalbe, the value of pc add 4 every clk
+        o_pc <= o_pc + 4'd4;   // when ce enalbe, the value of pc add 4 every clk
     end
 end
 

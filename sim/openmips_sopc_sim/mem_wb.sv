@@ -39,13 +39,24 @@ module mem_wb (
 
     output logic                       o_wb_cp0_reg_wen    ,
     output logic [`CP0_REG_N_ADDR-1:0] o_wb_cp0_reg_waddr  ,
-    output logic [`N_REG-1:0]          o_wb_cp0_reg_wdata 
+    output logic [`N_REG-1:0]          o_wb_cp0_reg_wdata  ,
+
+    input  logic                       i_flush                 
 );
 // 1. stall[4]==STOP, stall[5]==NO_STOP, mem -> pause, wb -> run, use nop instruction
 // 2. stall[4]==NO_STOP, mem->run
 // 3. others, keep wb_wen,wb_waddr, wb_wdata,wb_hi,wb_lo,wb_hilo_wen
 always_ff @( posedge i_clk or negedge i_rst_n) begin
     if(i_rst_n == `RST_ENABLE)begin
+        o_wb_waddr <= `NOP_REG_ADDR;
+        o_wb_wdata <= 'b0;
+        o_wb_wen   <= `WRITE_DISABLE;
+        o_wb_hilo_wen <= `WRITE_DISABLE;
+        o_wb_hi       <= 'b0;
+        o_wb_lo       <= 'b0;
+        o_wb_llbit_data <= 'b0;
+        o_wb_llbit_wen  <= 'b0;
+    end else if( i_flush == 1'b1  ) begin 
         o_wb_waddr <= `NOP_REG_ADDR;
         o_wb_wdata <= 'b0;
         o_wb_wen   <= `WRITE_DISABLE;
@@ -86,6 +97,10 @@ end
 
 always_ff @( posedge i_clk or negedge i_rst_n) begin
     if(i_rst_n == `RST_ENABLE)begin
+        o_wb_cp0_reg_wen   <= `WRITE_DISABLE;
+        o_wb_cp0_reg_waddr <= 'b0;
+        o_wb_cp0_reg_wdata <= 'b0;
+    end else if( i_flush == 1'b1 ) begin 
         o_wb_cp0_reg_wen   <= `WRITE_DISABLE;
         o_wb_cp0_reg_waddr <= 'b0;
         o_wb_cp0_reg_wdata <= 'b0;

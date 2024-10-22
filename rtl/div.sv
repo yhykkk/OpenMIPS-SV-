@@ -16,6 +16,8 @@ module div # (
     input  logic [N_WIDTH-1:0]    i_dividend     ,
     input  logic [N_WIDTH-1:0]    i_divisor      ,
 
+    input  logic                  i_cancel       ,
+
     output logic [N_WIDTH-1:0]    o_quotient     ,
     output logic [N_WIDTH-1:0]    o_remainder    ,
     output logic                  o_done_vld     ,
@@ -87,7 +89,7 @@ end
 always_comb begin
     case(curr_state )
     s_idle     : begin
-        if( (o_ready == 1'b1 ) && (i_divstart == 1'b1 )) begin
+        if( (o_ready == 1'b1 ) && (i_divstart == 1'b1 ) && (i_cancel == 1'b0 )) begin
             if( i_divisor == 'b0 ) begin
                 next_state = s_divbyzero;
             end else begin
@@ -98,16 +100,28 @@ always_comb begin
         end
     end
     s_divinit  : begin
-        next_state = s_divon;
+        if( i_cancel == 1'b0 ) begin 
+            next_state = s_divon;
+        end else begin
+            next_state = s_idle;
+        end
     end
     s_divbyzero: begin
-        next_state = s_divend;
+        if( i_cancel == 1'b0 ) begin 
+            next_state = s_divend;
+        end else begin 
+            next_state = s_idle;
+        end
     end
     s_divon    : begin
-        if( cnt == 'd0 ) begin
-            next_state = s_divend;
-        end else begin
-            next_state = s_divon;
+        if( i_cancel == 1'b0 ) begin 
+            if( cnt == 'd0 ) begin
+                next_state = s_divend;
+            end else begin
+                next_state = s_divon;
+            end
+        end else begin 
+            next_state = s_idle;
         end
     end
     s_divend   : begin
