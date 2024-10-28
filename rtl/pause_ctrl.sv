@@ -13,7 +13,10 @@ module pause_ctrl(
     input  logic [`N_REG-1:0]       i_cp0_epc       , 
     input  logic [31:0]             i_except_type   ,
     output logic [`N_INST_ADDR-1:0] o_new_pc        ,
-    output logic                    o_flush            
+    output logic                    o_flush         ,
+
+    input  logic                    i_if_stallreq   ,
+    input  logic                    i_mem_stallreq
 );
 
 always_comb begin
@@ -43,12 +46,20 @@ always_comb begin
             o_new_pc = 'b0;
         end
         endcase
+    end else if( i_mem_stallreq == `STOP ) begin 
+        o_stall = 6'b011111;
+        o_flush = 1'b0;
+        o_new_pc = 'b0;
     end else if( i_ex_stallreq == `STOP ) begin
         o_stall = 6'b001111;
         o_flush = 1'b0;
         o_new_pc = 'b0;
     end else if( i_id_stallreq == `STOP ) begin
         o_stall = 6'b000111;
+        o_flush = 1'b0;
+        o_new_pc = 'b0;
+    end else if( i_if_stallreq == `STOP ) begin 
+        o_stall = 6'b000111;  // Noting !!!
         o_flush = 1'b0;
         o_new_pc = 'b0;
     end else begin

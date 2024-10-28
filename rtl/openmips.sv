@@ -6,24 +6,31 @@
 **************************************/
 `include "defines.svh"
 module openmips (
-    input  logic                      i_clk            ,
-    input  logic                      i_rst_n          ,
-      
-    input  logic [`N_INST_DATA-1:0]   i_inst_data      ,
-      
-    output logic                      o_inst_ren       ,
-    output logic [`N_INST_ADDR-1:0]   o_inst_addr      ,
-      
-    input  logic [`N_MEM_DATA-1:0]    i_ram_data       ,
-      
-    output logic [`N_MEM_ADDR-1:0]    o_ram_addr       ,
-    output logic [`N_MEM_DATA-1:0]    o_ram_data       ,
-    output logic                      o_ram_we         ,
-    output logic                      o_ram_ce         ,
-    output logic [3:0]                o_ram_sel        ,
+    input  logic                      i_clk               ,
+    input  logic                      i_rst_n             ,
+ 
+    input  logic [`CP0_REG_N_INT-1:0] i_interrupt         ,
+    output logic                      o_timer_interrupt   ,
 
-    input  logic [`CP0_REG_N_INT-1:0] i_interrupt      ,
-    output logic                      o_timer_interrupt
+    // ibus
+    output logic [`N_INST_ADDR-1:0]   o_ibus_wishbone_addr,
+    output logic [`N_REG-1:0]         o_ibus_wishbone_data,
+    output logic                      o_ibus_wishbone_we  ,
+    output logic [3:0]                o_ibus_wishbone_sel ,
+    output logic                      o_ibus_wishbone_stb ,
+    output logic                      o_ibus_wishbone_cyc ,
+    input  logic [`N_REG-1:0]         i_ibus_wishbone_data,
+    input  logic                      i_ibus_wishbone_ack ,
+     
+    // dbus 
+    output logic [`N_INST_ADDR-1:0]   o_dbus_wishbone_addr,
+    output logic [`N_REG-1:0]         o_dbus_wishbone_data,
+    output logic                      o_dbus_wishbone_we  ,
+    output logic [3:0]                o_dbus_wishbone_sel ,
+    output logic                      o_dbus_wishbone_stb ,
+    output logic                      o_dbus_wishbone_cyc ,
+    input  logic [`N_REG-1:0]         i_dbus_wishbone_data,
+    input  logic                      i_dbus_wishbone_ack 
 );
 
 /********************** define if_id2id begin ***********************/
@@ -224,8 +231,33 @@ logic                       mem2cp0_delayslot_vld   ;
 
 /********************** define mem2pctrl begin **********************/
 logic [`N_REG-1:0]          mem2pctrl_cp0_epc       ;
+logic                       mem2pctrl_stallreq      ;
 /********************** define mem2pctrl  end  **********************/
 
+/********************** define if2pctrl begin **********************/
+logic                       if2pctrl_stallreq       ;
+/********************** define if2pctrl  end  **********************/
+
+/********************** define pc2ibus begin **********************/
+logic [`N_INST_ADDR-1:0]    pc2ibus_pc              ;
+logic                       pc2ibus_ce              ;
+/********************** define pc2ibus  end  **********************/
+
+/********************** define ibus2if_id begin **********************/
+logic [`N_REG-1:0]          ibus2if_id_cpu_data     ;
+/********************** define ibus2if_id  end  **********************/
+
+/********************** define mem2dbus begin **********************/
+logic [`N_MEM_ADDR-1:0]     mem2dbus_addr           ; 
+logic [`N_MEM_DATA-1:0]     mem2dbus_wdata          ; 
+logic                       mem2dbus_we             ; 
+logic [3:0]                 mem2dbus_sel            ; 
+logic                       mem2dbus_ce             ; 
+/********************** define mem2dbus  end  **********************/
+
+/********************** define dbus2mem begin **********************/
+logic [`N_MEM_DATA-1:0]     dbus2mem_rdata          ;    
+/********************** define dbus2mem  end **********************/
 pc_reg pc_reg_inst (
     .i_clk        (i_clk             ),
     .i_rst_n      (i_rst_n           ),
@@ -241,15 +273,15 @@ pc_reg pc_reg_inst (
 );
 
 if_id if_id_inst ( 
-    .i_clk     (i_clk             ),
-    .i_rst_n   (i_rst_n           ),
-    .i_if_pc   (o_inst_addr       ),
-    .i_if_inst (i_inst_data       ),
-    .i_stall   (pctrl2others_stall),
-    .o_id_pc   (if_id2id_pc       ),
-    .o_id_inst (if_id2id_inst     ),
+    .i_clk     (i_clk               ),
+    .i_rst_n   (i_rst_n             ),
+    .i_if_pc   (o_inst_addr         ),
+    .i_if_inst (ibus2if_id_cpu_data ),
+    .i_stall   (pctrl2others_stall  ),
+    .o_id_pc   (if_id2id_pc         ),
+    .o_id_inst (if_id2id_inst       ),
     
-    .i_flush   (pctrl2others_flush)
+    .i_flush   (pctrl2others_flush  )
 );
 
 id id_inst ( 
@@ -501,12 +533,12 @@ mem mem_inst (
     .i_mem_addr        (ex_mem2mem_addr          ),
     .i_mem_data        (ex_mem2mem_data          ),
     
-    .o_mem_addr        (o_ram_addr               ),
-    .o_mem_wdata       (o_ram_data               ),
-    .o_mem_we          (o_ram_we                 ),
-    .o_mem_sel         (o_ram_sel                ),
-    .o_mem_ce          (o_ram_ce                 ),
-    .i_mem_rdata       (i_ram_data               ),
+    .o_mem_addr        (mem2dbus_addr            ),
+    .o_mem_wdata       (mem2dbus_wdata           ),
+    .o_mem_we          (mem2dbus_we              ),
+    .o_mem_sel         (mem2dbus_sel             ),
+    .o_mem_ce          (mem2dbus_ce              ),
+    .i_mem_rdata       (dbus2mem_rdata           ),
 
     .i_llbit           (llbit2mem_llbit          ),
     .i_wb_llbit_wen    (mem_wb2llbit_wen         ),
@@ -591,23 +623,26 @@ pause_ctrl pause_ctrl_inst(
     .i_cp0_epc       (mem2pctrl_cp0_epc    ), 
     .i_except_type   (mem2cp0_except_type  ),
     .o_new_pc        (pctrl2pc_new_pc      ),
-    .o_flush         (pctrl2others_flush   )   
+    .o_flush         (pctrl2others_flush   ),
+
+    .i_if_stallreq   (if2pctrl_stallreq    ),
+    .i_mem_stallreq  (mem2pctrl_stallreq   )
 );
 
 div # (
     .N_WIDTH( `N_REG )
 )div_inst(
-    .i_clk          (i_clk              ),
-    .i_rst_n        (i_rst_n            ),
-    .i_divsigned    (ex2div_divsigned   ),
-    .i_divstart     (ex2div_divstart    ),
-    .i_dividend     (ex2div_dividend    ),
-    .i_divisor      (ex2div_divisor     ),
-    .i_cancel       (pctrl2others_flush ),
-    .o_quotient     (div2ex_quotient    ),
-    .o_remainder    (div2ex_remainder   ),
-    .o_done_vld     (div2ex_div_done    ),
-    .o_ready        (div2ex_div_ready   )     
+    .i_clk           (i_clk                ),
+    .i_rst_n         (i_rst_n              ),
+    .i_divsigned     (ex2div_divsigned     ),
+    .i_divstart      (ex2div_divstart      ),
+    .i_dividend      (ex2div_dividend      ),
+    .i_divisor       (ex2div_divisor       ),
+    .i_cancel        (pctrl2others_flush   ),
+    .o_quotient      (div2ex_quotient      ),
+    .o_remainder     (div2ex_remainder     ),
+    .o_done_vld      (div2ex_div_done      ),
+    .o_ready         (div2ex_div_ready     )     
 );
 
 llbit_reg llbit_reg_inst(
@@ -649,4 +684,60 @@ cp0 cp0_inst (
     .i_delayslot_vld  (mem2cp0_delayslot_vld ) 
 );
 
-endmodule
+
+wishbone_bus_if wishbone_bus_if_ibus(
+    .i_clk            (i_clk                 ),
+    .i_rst_n          (i_rst_n               ),
+    .i_stall          (pctrl2others_stall    ),
+    .i_flush          (pctrl2others_flush    ),
+
+    .i_cpu_ce         (pc2ibus_ce            ),
+    .i_cpu_data       ('b0                   ),
+    .i_cpu_addr       (pc2ibus_pc            ),
+    .i_cpu_we         ('b0                   ),
+    .i_cpu_sel        (4'hf                  ),
+
+    .o_cpu_data       (ibus2if_id_cpu_data   ),
+
+    .o_wishbone_addr  (o_ibus_wishbone_addr  ),
+    .o_wishbone_data  (o_ibus_wishbone_data  ),
+    .o_wishbone_we    (o_ibus_wishbone_we    ),
+    .o_wishbone_sel   (o_ibus_wishbone_sel   ),
+    .o_wishbone_stb   (o_ibus_wishbone_stb   ),
+    .o_wishbone_cyc   (o_ibus_wishbone_cyc   ),
+    .i_wishbone_data  (i_ibus_wishbone_data  ),
+    .i_wishbone_ack   (i_ibus_wishbone_ack   ),
+   
+    .o_stallreq       (if2pctrl_stallreq     )  
+);
+
+wishbone_bus_if wishbone_bus_if_dbus(
+    .i_clk            (i_clk                 ),
+    .i_rst_n          (i_rst_n               ),
+
+    .i_stall          (pctrl2others_stall    ),
+    .i_flush          (pctrl2others_flush    ),
+    
+    
+    .i_cpu_ce         (mem2dbus_ce           ),
+    .i_cpu_data       (mem2dbus_wdata        ),
+    .i_cpu_addr       (mem2dbus_addr         ),
+    .i_cpu_we         (mem2dbus_we           ),
+    .i_cpu_sel        (mem2dbus_sel          ),
+
+    .o_cpu_data       (dbus2mem_rdata        ),
+
+    .o_wishbone_addr  (o_dbus_wishbone_addr  ),
+    .o_wishbone_data  (o_dbus_wishbone_data  ),
+    .o_wishbone_we    (o_dbus_wishbone_we    ),
+    .o_wishbone_sel   (o_dbus_wishbone_sel   ),
+    .o_wishbone_stb   (o_dbus_wishbone_stb   ),
+    .o_wishbone_cyc   (o_dbus_wishbone_cyc   ),
+    .i_wishbone_data  (i_dbus_wishbone_data  ),
+    .i_wishbone_ack   (i_dbus_wishbone_ack   ),
+   
+    .o_stallreq       (mem2pctrl_stallreq    )
+);
+
+endmodule  
+       
