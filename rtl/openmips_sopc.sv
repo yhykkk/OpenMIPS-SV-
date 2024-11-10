@@ -53,14 +53,14 @@ openmips openmips_inst (
     .o_timer_interrupt    (timer_interrupt)
 );
 
-// logic [`N_INST_ADDR-1:0]  o_ibus_wishbone_addr;
-// logic [`N_REG-1:0]        o_ibus_wishbone_data;
-// logic                     o_ibus_wishbone_we  ;
-// logic [3:0]               o_ibus_wishbone_sel ;
-// logic                     o_ibus_wishbone_stb ;
-// logic                     o_ibus_wishbone_cyc ;
-// logic [`N_REG-1:0]        i_ibus_wishbone_data;
-// logic                     i_ibus_wishbone_ack ;
+// logic [`N_INST_ADDR-1:0] o_ibus_wishbone_addr ;
+// logic [`N_REG-1:0]       o_ibus_wishbone_data ;
+// logic                    o_ibus_wishbone_we   ;
+// logic [3:0]              o_ibus_wishbone_sel  ;
+// logic                    o_ibus_wishbone_stb  ;
+// logic                    o_ibus_wishbone_cyc  ;
+// logic [`N_REG-1:0]       i_ibus_wishbone_data ;
+// logic                    i_ibus_wishbone_ack  ;
 // logic [`N_INST_ADDR-1:0] o_dbus_wishbone_addr ;
 // logic [`N_REG-1:0]       o_dbus_wishbone_data ;
 // logic                    o_dbus_wishbone_we   ;
